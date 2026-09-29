@@ -2,6 +2,11 @@
 
 ## Problema 1: ecualización local de histograma
 
+El TP usa las bibliotecas trabajadas en la materia: **OpenCV (`cv2`)** para
+leer y guardar imágenes, replicar bordes y realizar la ecualización global;
+**NumPy** para los arreglos y los histogramas locales; y **Matplotlib** para
+las comparaciones visuales y el informe.
+
 El script `Ecualizacion de histograma.py` implementa la ecualización local para imágenes en escala de grises de 8 bits. Recorre la imagen con una ventana `M x N`, calcula el histograma de cada vecindad y transforma el nivel del píxel central. En los bordes replica los valores de los píxeles extremos, equivalente a `BORDER_REPLICATE` de OpenCV.
 
 La función principal es `ecualizacion_local(imagen, tamano_ventana)`, donde `imagen` es un arreglo NumPy 2D y `tamano_ventana` es una tupla `(M, N)`. Admite dimensiones positivas pares o impares; para ventanas pares toma como centro el elemento de índice `M // 2, N // 2`.
@@ -10,10 +15,10 @@ La función principal es `ecualizacion_local(imagen, tamano_ventana)`, donde `im
 
 Versiones utilizadas para generar los resultados:
 
-- Python 3.13.5
-- NumPy 2.3.2
-- Pillow 11.3.0
-- Matplotlib 3.11.2
+- Python 3.13
+- NumPy 2.2.6
+- Matplotlib 3.10.7
+- OpenCV Contrib 4.12.0.88
 
 Crear y activar el entorno virtual desde Git Bash en Windows:
 
@@ -48,6 +53,7 @@ El análisis detallado del informe corresponde a la imagen incluida y a las cuat
 ## Entregables
 
 - `Ecualizacion de histograma.py`: función y programa de análisis.
+- `comparacion_visual.py`: comparación de resultados y generación del informe PDF.
 - `requirements.txt`: versiones fijadas de las dependencias.
 - `Resultados/Problema1/`: imágenes procesadas y comparación generadas al ejecutar el script.
-- `Resultados/Problema1/Informe_Problema1.pdf`: informe del ejercicio con metodología, detalles recuperados y análisis del tamaño de ventana. Se genera junto con las imágenes.
+- `Resultados/Problema1/Informe_Problema1.pdf`: informe de dos páginas con la comparación, el método y el análisis general de las ventanas.

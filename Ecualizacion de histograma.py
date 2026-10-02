@@ -6,9 +6,6 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from comparacion_visual import guardar_resultados_visual
-
-
 VENTANAS_POR_DEFECTO = [(5, 5), (15, 15), (31, 31), (61, 61)]
 
 
@@ -97,21 +94,22 @@ def procesar(imagen_path: Path, salida_path: Path, ventanas: list[tuple[int, int
         raise FileNotFoundError(f"No se pudo leer la imagen: {imagen_path}")
 
     salida_path.mkdir(parents=True, exist_ok=True)
-    guardar_imagen(salida_path / "imagen_original.png", original)
+    imagenes_path = salida_path / "imagenes"
+    imagenes_path.mkdir(exist_ok=True)
+    guardar_imagen(imagenes_path / "imagen_original.png", original)
 
     global_ = cv2.equalizeHist(original)
-    guardar_imagen(salida_path / "ecualizacion_global.png", global_)
+    guardar_imagen(imagenes_path / "ecualizacion_global.png", global_)
 
-    locales = {}
     for ventana in ventanas:
         resultado = ecualizacion_local(original, ventana)
-        locales[ventana] = resultado
         alto, ancho = ventana
-        guardar_imagen(salida_path / f"ecualizacion_local_{alto}x{ancho}.png", resultado)
+        guardar_imagen(
+            imagenes_path / f"ecualizacion_local_{alto}x{ancho}.png", resultado
+        )
         print(f"Generada ventana {alto}x{ancho}")
 
-    guardar_resultados_visual(original, global_, locales, ventanas, salida_path)
-    print(f"Resultados guardados en: {salida_path}")
+    print(f"Imágenes guardadas en: {imagenes_path}")
 
 
 def main() -> None:

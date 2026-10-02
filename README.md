@@ -38,7 +38,7 @@ Desde la carpeta del repositorio, ejecutar:
 python "Ecualizacion de histograma.py"
 ```
 
-Por defecto, procesa `Img/Imagen_con_detalles_escondidos.tif` con ventanas de `5x5`, `15x15`, `31x31` y `61x61`. Los PNG se guardan en `Resultados/Problema1/` junto con una comparación visual.
+Por defecto, procesa `Img/Imagen_con_detalles_escondidos.tif` con ventanas de `5x5`, `15x15`, `31x31` y `61x61`. Los PNG se guardan en `Resultados/Problema1/imagenes/` para incorporarlos al informe.
 
 Se puede indicar otra imagen, carpeta de salida y conjunto de ventanas:
 
@@ -48,12 +48,30 @@ python "Ecualizacion de histograma.py" --imagen Img/Imagen_con_detalles_escondid
 
 El tamaño de ventana se escribe como `M x N` sin espacios (por ejemplo, `15x21`). La imagen de entrada debe ser monocromática o convertible a escala de grises y estar representada en 8 bits.
 
-El análisis detallado del informe corresponde a la imagen incluida y a las cuatro ventanas predeterminadas. Si se ejecuta con otra imagen o tamaños personalizados, el PDF muestra la comparación y la configuración utilizada, sin presentar esas conclusiones como si fueran del caso de referencia.
+El análisis detallado del informe corresponde a la imagen incluida y a las cuatro ventanas predeterminadas. Si se ejecuta con otra imagen o tamaños personalizados, se deben actualizar las imágenes incluidas en el informe Markdown.
 
 ## Entregables
 
 - `Ecualizacion de histograma.py`: función y programa de análisis.
-- `comparacion_visual.py`: comparación de resultados y generación del informe PDF.
+- `Resultados/Problema1/comparacion_visual.md`: informe en Markdown con la comparación visual y el análisis.
 - `requirements.txt`: versiones fijadas de las dependencias.
-- `Resultados/Problema1/`: imágenes procesadas y comparación generadas al ejecutar el script.
-- `Resultados/Problema1/Informe_Problema1.pdf`: informe de dos páginas con la comparación, el método y el análisis general de las ventanas.
+- `Resultados/Problema1/imagenes/`: imágenes procesadas para incorporar al informe.
+## Problema 2: validación de planillas
+
+El script `Validacion de planillas.py` detecta automáticamente la grilla,
+valida los seis campos de cada registro y procesa en ciclo las cuatro imágenes
+`grade_sheet_1.png` a `grade_sheet_4.png`.
+
+```bash
+python "Validacion de planillas.py"
+```
+
+Para cada planilla se guardan en `Resultados/Problema2/` un CSV con los
+resultados `OK`/`MAL` y una imagen que muestra los crops de nombre de los
+registros válidos con condición final `R` (recupera) o `L` (libre).
+
+Se puede procesar una planilla concreta o elegir otra carpeta de salida:
+
+```bash
+python "Validacion de planillas.py" --imagenes Img/grade_sheet_1.png --salida Resultados/Prueba2
+```

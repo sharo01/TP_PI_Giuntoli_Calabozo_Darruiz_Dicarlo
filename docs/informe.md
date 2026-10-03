@@ -137,3 +137,148 @@ La tabla siguiente resume lo que se observa al comparar las ecualizaciones local
 La ecualización global no revela los detalles porque reparte el rango según la cantidad de píxeles de toda la imagen, y los niveles de los detalles tienen muy pocos píxeles. La ecualización local, en cambio, calcula la transformación con la vecindad de cada píxel y estira los pocos niveles de cada recuadro a todo el rango.
 
 El tamaño de la ventana tiene que ser mayor que los detalles, para que la ventana tenga variedad de niveles, y menor que las zonas que los contienen, para no mezclar el recuadro con el fondo. En esta imagen, con recuadros de unos 60 píxeles de lado, la ventana de 31×31 cumple las dos condiciones; las ventanas más chicas amplifican el ruido del fondo y la de 61×61 mezcla cada recuadro con el fondo.
+
+## Problema 2: Validación de planillas de calificaciones
+
+### Descripción del problema
+
+Cada planilla tiene una tabla de 20 registros. Cada registro tiene seis campos: Legajo, Nombre y Apellido, tres notas parciales y la Condición Final. El objetivo es verificar automáticamente, a partir de la imagen de la planilla, que cada campo cumpla las restricciones de la consigna:
+
+- **Legajo:** 8 caracteres, formando una única palabra.
+- **Nombre y Apellido:** al menos dos palabras y no más de 12 caracteres.
+- **Parcial 1, 2 y 3:** 1 o 2 caracteres consecutivos.
+- **Condición Final:** un único carácter.
+
+La consigna pide:
+
+- **a)** Mostrar por pantalla si cada campo de cada registro es correcto (OK) o incorrecto (MAL).
+- **b)** Generar una imagen con los alumnos no aprobados (condición L o R) cuyos registros son correctos, con el *crop* del nombre y un indicador que distinga L de R.
+- **c)** Generar un archivo CSV con el resultado de la validación de cada registro.
+- **d)** Aplicar el algoritmo, en ciclo, a las cuatro planillas e informar los resultados.
+
+La solución está en `src/problema2_validacion_planillas.py`. El script primero muestra el detalle de cada paso con la planilla `grade_sheet_1.png`, y después procesa las cuatro planillas en un ciclo.
+
+### Binarización
+
+Para separar la tinta del fondo, la imagen se binariza con `img_th = img < th`: los píxeles más oscuros que el umbral `th` se consideran tinta. El umbral se elige automáticamente en cada planilla con el método de Otsu (`cv2.threshold` con `cv2.THRESH_OTSU`). El script lo muestra por pantalla:
+
+```text
+=== Planilla grade_sheet_1.png ===
+Umbral de Otsu: 134
+=== Planilla grade_sheet_2.png ===
+Umbral de Otsu: 135
+=== Planilla grade_sheet_3.png ===
+Umbral de Otsu: 134
+=== Planilla grade_sheet_4.png ===
+Umbral de Otsu: 143
+```
+
+La Figura 6 muestra la primera planilla y su versión binarizada, con la tinta en negro.
+
+![Planilla grade_sheet_1.png original y binarizada con el umbral de Otsu.](../resultados/problema2/binarizacion.png)
+
+### Detección de la grilla
+
+Para encontrar las celdas se detectan las líneas de la tabla, como sugiere la consigna: se suma la cantidad de píxeles oscuros de cada fila (`img_rows = np.sum(img_th, 1)`) y de cada columna (`img_cols = np.sum(img_th, 0)`). Las líneas de la tabla cruzan casi toda la imagen, así que en esas sumas aparecen como picos mucho más altos que los de las filas o columnas con texto.
+
+Una fila o columna se toma como línea si más de la mitad de sus píxeles son oscuros. En la Figura 7, ese límite es la línea roja discontinua: los picos de las líneas lo superan, y las filas y columnas con texto quedan muy por debajo. Como cada línea puede ocupar varias posiciones consecutivas, de cada tramo que supera el límite se usa su centro. El script muestra cuántas líneas encontró en la primera planilla:
+
+```text
+Líneas detectadas: 22 horizontales y 8 verticales
+```
+
+Son las 22 líneas horizontales que delimitan el encabezado y los 20 registros, y las 8 verticales que delimitan las 7 columnas. Como el límite es una fracción del tamaño de la imagen, la detección no depende de la escala ni de la posición de la tabla: la cuarta planilla, que tiene otro tamaño, se procesa igual.
+
+![Cantidad de píxeles oscuros por fila y por columna de grade_sheet_1.png. La línea roja discontinua marca la mitad del ancho y del alto.](../resultados/problema2/proyecciones.png)
+
+La Figura 8 muestra las líneas detectadas sobre la planilla: en rojo las horizontales y en azul las verticales.
+
+![Grilla detectada sobre grade_sheet_1.png.](../resultados/problema2/grilla.png)
+
+### Caracteres y palabras de cada campo
+
+Cada campo se recorta entre las líneas detectadas, con un margen de 2 píxeles para dejar afuera las líneas de la tabla. En cada recorte se buscan las componentes conectadas con `cv2.connectedComponentsWithStats` (conectividad 8), y se aplican tres reglas:
+
+1. **Se descartan las componentes de 1 píxel**, como sugiere la consigna con el filtro por área. Se usa el valor más bajo posible para no perder marcas pequeñas: el punto de «1.0», en el Parcial 2 del registro 15 de `grade_sheet_3.png`, cuenta como carácter, y por eso ese campo queda MAL.
+2. **Las componentes que se superponen en horizontal forman un solo carácter.** La Ñ está entre los caracteres permitidos y su tilde es una componente separada de la letra; sin esta regla contaría como dos caracteres.
+3. **Una separación mayor a 7 píxeles entre caracteres es un espacio**, es decir, un cambio de palabra. Entre las letras de una palabra la separación es de pocos píxeles, y entre palabras es mucho mayor.
+
+La Figura 9 muestra las componentes del nombre «AMANDA SANTOS», del registro 8 de la primera planilla, con dos umbrales. Con un umbral fijo de 160, que fue el primero que se probó, entran los grises del borde de las letras y la «A» y la «M» quedan unidas en una sola componente: el campo cuenta 11 caracteres en lugar de 12. Con el umbral de Otsu, cada letra es una componente y el conteo es correcto.
+
+![Componentes conectadas del nombre «AMANDA SANTOS» con el umbral fijo de 160 y con el umbral de Otsu.](../resultados/problema2/componentes.png)
+
+### Validación de los campos (ítem a)
+
+Con la cantidad de caracteres y de espacios de cada campo, se aplican estos criterios:
+
+| Campo | Restricción de la consigna | Criterio implementado |
+|:----|:------|:------|
+| Legajo | 8 caracteres, una única palabra | 8 caracteres y ningún espacio |
+| Nombre y Apellido | Al menos dos palabras y no más de 12 caracteres | Al menos un espacio y no más de 12 caracteres |
+| Parcial 1, 2 y 3 | 1 o 2 caracteres consecutivos | 1 o 2 caracteres y ningún espacio |
+| Condición Final | Un único carácter | Exactamente 1 carácter |
+
+Los espacios no se cuentan entre los 12 caracteres del nombre, porque no están entre los caracteres permitidos que enumera la consigna. Por ejemplo, «AMANDA SANTOS» tiene 12 letras y es correcto. Una celda vacía no tiene caracteres, así que no cumple ningún criterio y queda MAL.
+
+Por cada registro, el script muestra el resultado de cada campo con el formato de la consigna:
+
+```text
+Registro 1:
+Legajo: OK
+Nombre y Apellido: OK
+Parcial 1: OK
+Parcial 2: OK
+Parcial 3: OK
+Condición Final: OK
+```
+
+### Alumnos no aprobados (ítem b)
+
+Para los registros con todos los campos correctos, se lee la letra de la Condición Final a partir de su forma, como muestra la Figura 10:
+
+- La **L** y la **R** tienen un trazo vertical a la izquierda de toda su altura: la primera columna de la letra tiene tinta en todas sus filas. En la **A**, la primera columna tiene tinta en menos de la mitad de las filas.
+- Entre la L y la R, solo la **R** tiene tinta en su mitad superior derecha.
+
+![Letras de la Condición Final de los registros 1, 2 y 4 de grade_sheet_1.png y cómo las lee el script.](../resultados/problema2/condicion.png){width=50%}
+
+Con los alumnos con condición L o R se arma una imagen por planilla, con el *crop* del campo Nombre y Apellido de cada uno. El indicador es el título de cada *crop*: «LIBRE (L)» en rojo o «RECUPERA (R)» en naranja. La Figura 11 muestra la imagen de la primera planilla. Si en una planilla no hay alumnos que informar, la imagen lo indica con un mensaje.
+
+![Alumnos no aprobados de grade_sheet_1.png.](../resultados/problema2/no_aprobados_grade_sheet_1.png){width=45%}
+
+### Archivo CSV (ítem c)
+
+Por cada planilla se guarda `validacion_grade_sheet_<id>.csv`, armado con pandas. Tiene una fila por registro, con el ID en la primera columna (el número de orden del registro en la planilla) y una columna por campo, en el orden de la consigna, con el valor OK o MAL. Por ejemplo, las primeras filas del CSV de la primera planilla son:
+
+```text
+ID,Legajo,Nombre y Apellido,Parcial 1,Parcial 2,Parcial 3,Condición Final
+1,OK,OK,OK,OK,OK,OK
+2,OK,OK,OK,OK,OK,OK
+3,MAL,MAL,MAL,MAL,MAL,MAL
+```
+
+El registro 3 de esa planilla está vacío, y por eso todos sus campos quedan MAL.
+
+### Resultados de las cuatro planillas (ítem d)
+
+El script procesa en ciclo las cuatro planillas. La tabla resume sus resultados, según los CSV y las imágenes de no aprobados que genera:
+
+| Planilla | Registros con todos los campos OK | Libres (L) | Recuperan (R) |
+|:----|:--------|:---|:---|
+| `grade_sheet_1.png` | 15 | 6 | 4 |
+| `grade_sheet_2.png` | 3 | 3 | 0 |
+| `grade_sheet_3.png` | 0 | 0 | 0 |
+| `grade_sheet_4.png` | 6 | 2 | 2 |
+
+En la tercera planilla ningún registro está completo correctamente, así que su imagen de no aprobados solo muestra el mensaje correspondiente.
+
+### Problemas encontrados
+
+- **Caracteres unidos.** Con un umbral fijo de 160, los grises del borde de las letras unían caracteres vecinos (Figura 9), y algunos campos incorrectos quedaban como correctos. Se resolvió eligiendo el umbral con el método de Otsu en cada planilla.
+- **Marcas pequeñas.** El punto de «1.0» es mucho más chico que una letra, y un filtro de área alto lo eliminaría: el campo se contaría como «10» y quedaría correcto. Por eso solo se descartan las componentes de 1 píxel, y ese campo queda MAL en el CSV de la tercera planilla.
+- **Distinción entre A y R.** Las dos letras tienen un hueco cerrado en su parte superior (Figura 10), así que no alcanza con mirar si la letra tiene huecos. La diferencia está en el trazo vertical izquierdo, que la R tiene y la A no.
+
+### Conclusiones
+
+Las proyecciones de píxeles oscuros por fila y por columna permiten detectar la grilla sin depender de la escala ni de la posición de la tabla, y las componentes conectadas permiten contar caracteres y palabras en cada celda. La parte más sensible del método es la binarización: el umbral define qué píxeles forman cada carácter, y un umbral fijo mal elegido une letras vecinas. Elegirlo con el método de Otsu resolvió ese problema en las cuatro planillas.
+
+Los criterios dependen de algunas suposiciones: que la letra de la Condición Final es A, L o R, y que la separación entre palabras es claramente mayor que entre letras, como ocurre con la fuente de estas planillas.

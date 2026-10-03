@@ -78,10 +78,11 @@ Para probar otros tamaños de ventana, se modifica la lista `VENTANAS` al comien
 python src/problema2_validacion_planillas.py
 ```
 
-Procesa en ciclo las planillas `datos/grade_sheet_1.png` a `datos/grade_sheet_4.png`. Para cada una muestra por pantalla el resultado (`OK` o `MAL`) de cada campo de cada registro y guarda en `resultados/problema2/`:
+Primero muestra el detalle de cada paso con `datos/grade_sheet_1.png` y después procesa en ciclo las planillas `datos/grade_sheet_1.png` a `datos/grade_sheet_4.png`. Para cada una muestra por pantalla el umbral de Otsu y el resultado (`OK` o `MAL`) de cada campo de cada registro. Guarda en `resultados/problema2/`:
 
 - `validacion_grade_sheet_<id>.csv`: resultado de la validación de cada registro.
 - `no_aprobados_grade_sheet_<id>.png`: alumnos no aprobados con registro válido.
+- `binarizacion.png`, `proyecciones.png`, `grilla.png`, `componentes.png` y `condicion.png`: detalle de cada paso con la primera planilla.
 
 ## Descripción de la solución
 
@@ -102,9 +103,9 @@ El análisis de los detalles ocultos y de la influencia del tamaño de la ventan
 
 ### Problema 2: validación de planillas
 
-1. **Detección de la grilla.** Se umbraliza la imagen (`img < th`, con `th` elegido por el método de Otsu en cada planilla) y se suman los píxeles oscuros por fila y por columna. Los tramos que superan el 55 % del ancho (o del alto) se toman como líneas de la tabla, y de cada tramo se usa su centro. Así la detección no depende de la escala ni de la posición de la tabla.
+1. **Detección de la grilla.** Se umbraliza la imagen (`img < th`, con `th` elegido por el método de Otsu en cada planilla) y se suman los píxeles oscuros por fila y por columna. Los tramos que superan la mitad del ancho (o del alto) se toman como líneas de la tabla, y de cada tramo se usa su centro. Así la detección no depende de la escala ni de la posición de la tabla.
 2. **Recorte de celdas.** Cada campo se recorta entre las líneas detectadas, con un margen de 2 px para excluir restos de las líneas.
-3. **Caracteres y palabras.** En cada celda se obtienen las componentes conectadas (conectividad 8) y se descartan las de 1 px. Las componentes que se superponen en horizontal se cuentan como un solo carácter, como la Ñ y su tilde. Una separación horizontal mayor a 5 px entre caracteres consecutivos se cuenta como espacio entre palabras.
+3. **Caracteres y palabras.** En cada celda se obtienen las componentes conectadas (conectividad 8) y se descartan las de 1 px. Las componentes que se superponen en horizontal se cuentan como un solo carácter, como la Ñ y su tilde. Una separación horizontal mayor a 7 px entre caracteres consecutivos se cuenta como espacio entre palabras.
 4. **Validación.** Cada campo se evalúa con estos criterios; una celda vacía no cumple ninguno y se marca `MAL`.
 
    | Campo | Restricción de la consigna | Criterio implementado |

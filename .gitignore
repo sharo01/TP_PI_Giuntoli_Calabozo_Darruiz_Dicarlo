@@ -1,3 +1,13 @@
+# Entornos virtuales
 .venv/
+venv*/
+
+# Python
 __pycache__/
 *.py[cod]
+
+# Editores y sistema operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

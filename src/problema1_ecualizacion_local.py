@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 
 VENTANAS_POR_DEFECTO = [(5, 5), (15, 15), (31, 31), (61, 61)]
@@ -87,6 +88,34 @@ def guardar_imagen(ruta: Path, imagen: np.ndarray) -> None:
         raise OSError(f"No se pudo guardar: {ruta}")
 
 
+def guardar_comparacion(
+    ruta: Path,
+    original: np.ndarray,
+    global_: np.ndarray,
+    locales: dict[tuple[int, int], np.ndarray],
+) -> None:
+    """Guarda una figura con la imagen original y todas sus ecualizaciones."""
+    paneles = [("Original", original), ("Ecualización global", global_)]
+    paneles += [
+        (f"Local {alto}x{ancho}", imagen) for (alto, ancho), imagen in locales.items()
+    ]
+
+    columnas = 3
+    filas = (len(paneles) + columnas - 1) // columnas
+    figura, ejes = plt.subplots(filas, columnas, figsize=(12, 4 * filas))
+    ejes = np.ravel(ejes)
+    for eje, (titulo, imagen) in zip(ejes, paneles):
+        eje.imshow(imagen, cmap="gray", vmin=0, vmax=255)
+        eje.set_title(titulo)
+    for eje in ejes:
+        eje.axis("off")
+
+    figura.suptitle("Problema 1 — Ecualización local de histograma", fontsize=15)
+    figura.tight_layout()
+    figura.savefig(ruta, dpi=180, bbox_inches="tight")
+    plt.close(figura)
+
+
 def procesar(imagen_path: Path, salida_path: Path, ventanas: list[tuple[int, int]]) -> None:
     """Lee una imagen, aplica las ecualizaciones y guarda los resultados."""
     original = cv2.imread(str(imagen_path), cv2.IMREAD_GRAYSCALE)
@@ -94,37 +123,40 @@ def procesar(imagen_path: Path, salida_path: Path, ventanas: list[tuple[int, int
         raise FileNotFoundError(f"No se pudo leer la imagen: {imagen_path}")
 
     salida_path.mkdir(parents=True, exist_ok=True)
-    imagenes_path = salida_path / "imagenes"
-    imagenes_path.mkdir(exist_ok=True)
-    guardar_imagen(imagenes_path / "imagen_original.png", original)
+    guardar_imagen(salida_path / "imagen_original.png", original)
 
     global_ = cv2.equalizeHist(original)
-    guardar_imagen(imagenes_path / "ecualizacion_global.png", global_)
+    guardar_imagen(salida_path / "ecualizacion_global.png", global_)
 
+    locales = {}
     for ventana in ventanas:
         resultado = ecualizacion_local(original, ventana)
+        locales[ventana] = resultado
         alto, ancho = ventana
         guardar_imagen(
-            imagenes_path / f"ecualizacion_local_{alto}x{ancho}.png", resultado
+            salida_path / f"ecualizacion_local_{alto}x{ancho}.png", resultado
         )
         print(f"Generada ventana {alto}x{ancho}")
 
-    print(f"Imágenes guardadas en: {imagenes_path}")
+    guardar_comparacion(
+        salida_path / "comparacion_ventanas.png", original, global_, locales
+    )
+    print(f"Imágenes guardadas en: {salida_path}")
 
 
 def main() -> None:
-    raiz = Path(__file__).resolve().parent
+    raiz = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description="Ecualización local de histograma.")
     parser.add_argument(
         "--imagen",
         type=Path,
-        default=raiz / "Img" / "Imagen_con_detalles_escondidos.tif",
+        default=raiz / "datos" / "Imagen_con_detalles_escondidos.tif",
         help="Imagen de entrada (por defecto, la del TP).",
     )
     parser.add_argument(
         "--salida",
         type=Path,
-        default=raiz / "Resultados" / "Problema1",
+        default=raiz / "resultados" / "problema1",
         help="Carpeta de resultados.",
     )
     parser.add_argument(

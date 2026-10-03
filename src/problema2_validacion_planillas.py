@@ -137,10 +137,10 @@ def procesar_planilla(ruta_imagen: Path, salida: Path) -> None:
 
 
 def main() -> None:
-    raiz = Path(__file__).resolve().parent
+    raiz = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description="Valida planillas de calificaciones.")
-    parser.add_argument("--imagenes", type=Path, nargs="+", default=sorted((raiz / "Img").glob("grade_sheet_[0-9].png")), help="Una o más planillas PNG.")
-    parser.add_argument("--salida", type=Path, default=raiz / "Resultados" / "Problema2", help="Carpeta de resultados.")
+    parser.add_argument("--imagenes", type=Path, nargs="+", default=sorted((raiz / "datos").glob("grade_sheet_[0-9].png")), help="Una o más planillas PNG.")
+    parser.add_argument("--salida", type=Path, default=raiz / "resultados" / "problema2", help="Carpeta de resultados.")
     argumentos = parser.parse_args()
     for ruta in argumentos.imagenes:
         procesar_planilla(ruta, argumentos.salida)

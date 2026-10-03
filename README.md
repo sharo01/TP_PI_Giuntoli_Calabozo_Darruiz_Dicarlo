@@ -50,7 +50,7 @@ En PowerShell, el entorno se activa con `.venv\Scripts\Activate.ps1`; en Linux o
 
 ## Ejecución
 
-Los comandos se ejecutan desde la raíz del repositorio. Las rutas por defecto se resuelven a partir de la ubicación de cada script; las rutas que se pasan como argumento se interpretan respecto de la carpeta actual.
+Los scripts no reciben argumentos: leen de `datos/` y escriben en `resultados/`, con rutas que se resuelven a partir de la ubicación de cada script. Los comandos se muestran desde la raíz del repositorio.
 
 ### Problema 1
 
@@ -65,17 +65,7 @@ Procesa `datos/Imagen_con_detalles_escondidos.tif` con ventanas de 5×5, 15×15,
 - `ecualizacion_local_<M>x<N>.png`: una imagen por cada ventana.
 - `comparacion_ventanas.png`: figura con la imagen original, la ecualización global y todas las ecualizaciones locales, generada con Matplotlib.
 
-| Argumento | Descripción | Valor por defecto |
-|---|---|---|
-| `--imagen` | Imagen de entrada; se lee en escala de grises de 8 bits | `datos/Imagen_con_detalles_escondidos.tif` |
-| `--salida` | Carpeta de resultados | `resultados/problema1/` |
-| `--ventanas` | Una o más ventanas con formato `MxN`, sin espacios | `5x5 15x15 31x31 61x61` |
-
-Ejemplo con otras ventanas:
-
-```bash
-python src/problema1_ecualizacion_local.py --ventanas 9x9 21x21 41x41 --salida resultados/prueba
-```
+Para probar otros tamaños de ventana, se modifica la lista `VENTANAS` al comienzo del script.
 
 ### Problema 2
 
@@ -88,22 +78,11 @@ Procesa en ciclo las planillas `datos/grade_sheet_1.png` a `datos/grade_sheet_4.
 - `validacion_grade_sheet_<id>.csv`: resultado de la validación de cada registro.
 - `no_aprobados_grade_sheet_<id>.png`: alumnos no aprobados con registro válido.
 
-| Argumento | Descripción | Valor por defecto |
-|---|---|---|
-| `--imagenes` | Una o más planillas PNG | Las cuatro `grade_sheet_<id>.png` de `datos/` |
-| `--salida` | Carpeta de resultados | `resultados/problema2/` |
-
-Ejemplo con una sola planilla:
-
-```bash
-python src/problema2_validacion_planillas.py --imagenes datos/grade_sheet_1.png
-```
-
 ## Descripción de la solución
 
 ### Problema 1: ecualización local de histograma
 
-La función `ecualizacion_local(imagen, ventana)` recibe una imagen en escala de grises (`uint8`) y una tupla `(M, N)`. Para cada píxel calcula el histograma de la ventana de M×N centrada en él y le aplica la transformación de ecualización de esa ventana:
+La función `ecualizacion_local(imagen, ventana)` recibe una imagen en escala de grises (`uint8`) y una tupla `(M, N)`. Para cada píxel toma la ventana de M×N centrada en él, la ecualiza con `cv2.equalizeHist` y conserva el nuevo valor del píxel central. La transformación que aplica `cv2.equalizeHist` sobre la ventana es:
 
 ```text
 s = round( 255 · (CDF(r) − CDF_min) / (M·N − CDF_min) )
@@ -112,7 +91,6 @@ s = round( 255 · (CDF(r) − CDF_min) / (M·N − CDF_min) )
 donde `r` es el nivel del píxel central y `CDF_min` es el primer valor no nulo de la distribución acumulada de la ventana. Si la ventana tiene un único nivel de gris, se conserva el valor original.
 
 - **Bordes:** se replican los píxeles extremos con `cv2.copyMakeBorder` y `cv2.BORDER_REPLICATE`.
-- **Eficiencia:** el histograma se actualiza al desplazar la ventana, restando la columna que sale y sumando la que entra, en lugar de recalcularlo en cada posición.
 - **Ventanas pares:** se admiten; el centro es el elemento de índice `(M // 2, N // 2)`.
 
 El análisis de los detalles ocultos y de la influencia del tamaño de la ventana está en el [informe](docs/informe.md).

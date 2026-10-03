@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import csv
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,7 +9,11 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-CAMPOS = ("Legajo", "Nombre y Apellido", "Parcial 1", "Parcial 2", "Parcial 3", "Condición Final")
+RAIZ = Path(__file__).resolve().parents[1]
+CARPETA_DATOS = RAIZ / "datos"
+CARPETA_SALIDA = RAIZ / "resultados" / "problema2"
+
+CAMPOS =("Legajo", "Nombre y Apellido", "Parcial 1", "Parcial 2", "Parcial 3", "Condición Final")
 
 
 @dataclass
@@ -137,13 +140,8 @@ def procesar_planilla(ruta_imagen: Path, salida: Path) -> None:
 
 
 def main() -> None:
-    raiz = Path(__file__).resolve().parents[1]
-    parser = argparse.ArgumentParser(description="Valida planillas de calificaciones.")
-    parser.add_argument("--imagenes", type=Path, nargs="+", default=sorted((raiz / "datos").glob("grade_sheet_[0-9].png")), help="Una o más planillas PNG.")
-    parser.add_argument("--salida", type=Path, default=raiz / "resultados" / "problema2", help="Carpeta de resultados.")
-    argumentos = parser.parse_args()
-    for ruta in argumentos.imagenes:
-        procesar_planilla(ruta, argumentos.salida)
+    for ruta in sorted(CARPETA_DATOS.glob("grade_sheet_[0-9].png")):
+        procesar_planilla(ruta, CARPETA_SALIDA)
 
 
 if __name__ == "__main__":

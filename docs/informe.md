@@ -12,7 +12,7 @@ Se procesó la imagen `datos/Imagen_con_detalles_escondidos.tif`: una imagen TIF
 
 ### Método
 
-Para cada posición de la imagen se obtiene el histograma local de una ventana de M×N píxeles centrada en el píxel, y con él se calcula el nuevo nivel del píxel central:
+Para cada posición de la imagen se toma una ventana de M×N píxeles centrada en el píxel, se ecualiza su histograma con `cv2.equalizeHist` y se conserva el nuevo nivel del píxel central. La transformación que se aplica en cada ventana es:
 
 $$
 s = \operatorname{round}\left( 255 \cdot \frac{\mathrm{CDF}(g) - \mathrm{CDF}_{\min}}{M \cdot N - \mathrm{CDF}_{\min}} \right)

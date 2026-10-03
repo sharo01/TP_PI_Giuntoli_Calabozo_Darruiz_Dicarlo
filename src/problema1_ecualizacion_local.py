@@ -6,9 +6,9 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-RAIZ = Path(__file__).resolve().parents[1]
-IMAGEN = RAIZ / "datos" / "Imagen_con_detalles_escondidos.tif"
-CARPETA_SALIDA = RAIZ / "resultados" / "problema1"
+# Rutas relativas a la raíz del repositorio, desde donde se ejecuta el script.
+IMAGEN = Path("datos") / "Imagen_con_detalles_escondidos.tif"
+CARPETA_SALIDA = Path("resultados") / "problema1"
 VENTANAS = [(5, 5), (15, 15), (31, 31), (61, 61)]
 
 
@@ -52,62 +52,112 @@ def ecualizacion_local(img: np.ndarray, ventana: tuple[int, int]) -> np.ndarray:
     return img_eq
 
 
-def guardar_comparacion(
-    ruta: Path,
-    img: np.ndarray,
-    img_heq: np.ndarray,
-    imgs_locales: dict[tuple[int, int], np.ndarray],
-) -> None:
-    """Guarda una figura con la imagen original y todas sus ecualizaciones."""
-    paneles = [("Original", img), ("Ecualización global", img_heq)]
-    paneles += [
-        (f"Local {alto}x{ancho}", img_local)
-        for (alto, ancho), img_local in imgs_locales.items()
-    ]
+# --- Imagen original -----------------------------------------------------------
+img = cv2.imread(str(IMAGEN), cv2.IMREAD_GRAYSCALE)
+if img is None:
+    raise FileNotFoundError(f"No se pudo leer la imagen: {IMAGEN}")
 
-    columnas = 3
-    # División redondeando hacia arriba: filas suficientes para todos los paneles.
-    filas = (len(paneles) + columnas - 1) // columnas
-    plt.figure(figsize=(12, 4 * filas))
-    # plt.subplot numera los paneles desde 1, de izquierda a derecha y de
-    # arriba hacia abajo.
-    for i, (titulo, img_panel) in enumerate(paneles, start=1):
-        plt.subplot(filas, columnas, i)
-        # vmin/vmax fijos para que matplotlib no reescale el contraste.
-        plt.imshow(img_panel, cmap="gray", vmin=0, vmax=255)
-        plt.title(titulo)
-        plt.axis("off")
+CARPETA_SALIDA.mkdir(parents=True, exist_ok=True)
+cv2.imwrite(str(CARPETA_SALIDA / "imagen_original.png"), img)
+print(f"Tamaño: {img.shape}, tipo: {img.dtype}")
 
-    plt.suptitle("Problema 1 — Ecualización local de histograma", fontsize=15)
-    plt.tight_layout()
-    plt.savefig(ruta, dpi=180, bbox_inches="tight")
-    plt.close()
+# Cantidad de píxeles de cada nivel de gris.
+niveles, cantidades = np.unique(img, return_counts=True)
+for nivel, cantidad in zip(niveles, cantidades):
+    print(f"Nivel {nivel}: {cantidad} píxeles")
 
+# Histograma en escala logarítmica: con escala lineal, los niveles 0 y 227
+# tapan al resto.
+plt.figure(figsize=(12, 4))
+plt.subplot(121)
+plt.imshow(img, cmap="gray", vmin=0, vmax=255)
+plt.title("Imagen original")
+plt.subplot(122)
+plt.hist(img.flatten(), bins=256, range=(0, 256), log=True)
+plt.title("Histograma")
+plt.savefig(CARPETA_SALIDA / "histograma_original.png", dpi=180, bbox_inches="tight")
+plt.show()
 
-def main() -> None:
-    img = cv2.imread(str(IMAGEN), cv2.IMREAD_GRAYSCALE)
-    if img is None:
-        raise FileNotFoundError(f"No se pudo leer la imagen: {IMAGEN}")
+# --- Ecualización global -------------------------------------------------------
+img_heq = cv2.equalizeHist(img)
+cv2.imwrite(str(CARPETA_SALIDA / "ecualizacion_global.png"), img_heq)
 
-    CARPETA_SALIDA.mkdir(parents=True, exist_ok=True)
-    cv2.imwrite(str(CARPETA_SALIDA / "imagen_original.png"), img)
+# Nivel que le asigna la ecualización global a cada nivel original.
+for nivel in niveles:
+    print(f"Nivel {nivel} -> {img_heq[img == nivel][0]}")
 
-    img_heq = cv2.equalizeHist(img)
-    cv2.imwrite(str(CARPETA_SALIDA / "ecualizacion_global.png"), img_heq)
+plt.figure(figsize=(12, 4))
+plt.subplot(121)
+plt.imshow(img_heq, cmap="gray", vmin=0, vmax=255)
+plt.title("Ecualización global")
+plt.subplot(122)
+plt.hist(img_heq.flatten(), bins=256, range=(0, 256), log=True)
+plt.title("Histograma")
+plt.savefig(CARPETA_SALIDA / "histograma_global.png", dpi=180, bbox_inches="tight")
+plt.show()
 
-    imgs_locales = {}
-    for alto, ancho in VENTANAS:
-        img_local = ecualizacion_local(img, (alto, ancho))
-        imgs_locales[(alto, ancho)] = img_local
-        nombre = f"ecualizacion_local_{alto}x{ancho}.png"
-        cv2.imwrite(str(CARPETA_SALIDA / nombre), img_local)
-        print(f"Generada ventana {alto}x{ancho}")
+# --- Borde replicado -----------------------------------------------------------
+# Imagen con el borde que agrega la ventana más grande.
+alto, ancho = VENTANAS[-1]
+img_ext = cv2.copyMakeBorder(
+    img, alto // 2, alto // 2, ancho // 2, ancho // 2, cv2.BORDER_REPLICATE
+)
+print(f"Tamaño con borde para una ventana de {alto}x{ancho}: {img_ext.shape}")
 
-    guardar_comparacion(
-        CARPETA_SALIDA / "comparacion_ventanas.png", img, img_heq, imgs_locales
-    )
-    print(f"Imágenes guardadas en: {CARPETA_SALIDA}")
+# Original y con borde lado a lado: los ejes en píxeles muestran el tamaño.
+plt.figure(figsize=(10, 5))
+plt.subplot(121)
+plt.imshow(img, cmap="gray", vmin=0, vmax=255)
+plt.title("Imagen original")
+plt.subplot(122)
+plt.imshow(img_ext, cmap="gray", vmin=0, vmax=255)
+plt.title(f"Con borde replicado (ventana de {alto}x{ancho})")
+plt.savefig(CARPETA_SALIDA / "borde_replicado.png", dpi=180, bbox_inches="tight")
+plt.show()
 
+# --- Ecualización local con cada ventana ---------------------------------------
+imgs_locales = {}
+for alto, ancho in VENTANAS:
+    img_local = ecualizacion_local(img, (alto, ancho))
+    imgs_locales[(alto, ancho)] = img_local
+    nombre = f"ecualizacion_local_{alto}x{ancho}.png"
+    cv2.imwrite(str(CARPETA_SALIDA / nombre), img_local)
+    print(f"Generada ventana {alto}x{ancho}")
 
-if __name__ == "__main__":
-    main()
+# --- Comparación entre todas las ecualizaciones --------------------------------
+paneles = [("Original", img), ("Ecualización global", img_heq)]
+paneles += [
+    (f"Local {alto}x{ancho}", img_local)
+    for (alto, ancho), img_local in imgs_locales.items()
+]
+
+columnas = 3
+# División redondeando hacia arriba: filas suficientes para todos los paneles.
+filas = (len(paneles) + columnas - 1) // columnas
+plt.figure(figsize=(12, 4 * filas))
+# plt.subplot numera los paneles desde 1, de izquierda a derecha y de
+# arriba hacia abajo.
+for i, (titulo, img_panel) in enumerate(paneles, start=1):
+    plt.subplot(filas, columnas, i)
+    # vmin/vmax fijos para que matplotlib no reescale el contraste.
+    plt.imshow(img_panel, cmap="gray", vmin=0, vmax=255)
+    plt.title(titulo)
+    plt.axis("off")
+
+plt.tight_layout()
+plt.savefig(CARPETA_SALIDA / "comparacion_ventanas.png", dpi=180, bbox_inches="tight")
+plt.show()
+
+# --- Ventana elegida: 31x31 ----------------------------------------------------
+# Misma figura que la de la ecualización global, para comparar los histogramas.
+img_31 = imgs_locales[(31, 31)]
+plt.figure(figsize=(12, 4))
+plt.subplot(121)
+plt.imshow(img_31, cmap="gray", vmin=0, vmax=255)
+plt.title("Ecualización local 31x31")
+plt.subplot(122)
+plt.hist(img_31.flatten(), bins=256, range=(0, 256), log=True)
+plt.title("Histograma")
+plt.savefig(CARPETA_SALIDA / "histograma_local_31x31.png", dpi=180, bbox_inches="tight")
+print(f"Imágenes guardadas en: {CARPETA_SALIDA}")
+plt.show()

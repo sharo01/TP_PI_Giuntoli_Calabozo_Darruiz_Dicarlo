@@ -22,11 +22,12 @@ El trabajo resuelve los dos problemas planteados en la [consigna](docs/consigna_
 │   ├── grade_sheet_1.png … grade_sheet_4.png
 │   └── grade_sheet_empty.png               Planilla vacía (referencia)
 ├── resultados/                             Salidas generadas por los scripts
-│   ├── problema1/                          Imágenes ecualizadas y figura comparativa
+│   ├── problema1/                          Imágenes ecualizadas y figuras del informe
 │   └── problema2/                          CSV de validación e imagen de no aprobados por planilla
 ├── docs/                                   Consigna e informe
 │   ├── consigna_TP1_2026_C2.pdf
-│   └── informe.md
+│   ├── informe.md                          Fuente editable del informe
+│   └── informe.pdf                         Informe
 ├── requirements.txt
 └── README.md
 ```
@@ -50,7 +51,7 @@ En PowerShell, el entorno se activa con `.venv\Scripts\Activate.ps1`; en Linux o
 
 ## Ejecución
 
-Los scripts no reciben argumentos: leen de `datos/` y escriben en `resultados/`, con rutas que se resuelven a partir de la ubicación de cada script. Los comandos se muestran desde la raíz del repositorio.
+Los scripts no reciben argumentos: leen de `datos/` y escriben en `resultados/`. Los comandos se ejecutan desde la raíz del repositorio: los scripts usan rutas relativas a esa carpeta, para poder ejecutarlos también línea por línea.
 
 ### Problema 1
 
@@ -58,12 +59,16 @@ Los scripts no reciben argumentos: leen de `datos/` y escriben en `resultados/`,
 python src/problema1_ecualizacion_local.py
 ```
 
-Procesa `datos/Imagen_con_detalles_escondidos.tif` con ventanas de 5×5, 15×15, 31×31 y 61×61, y guarda en `resultados/problema1/`:
+Procesa `datos/Imagen_con_detalles_escondidos.tif` con ventanas de 5×5, 15×15, 31×31 y 61×61. Muestra por pantalla el tamaño de la imagen, cuántos píxeles tiene cada nivel de gris, a qué nivel lleva cada uno la ecualización global y el tamaño de la imagen con el borde replicado. Guarda en `resultados/problema1/`:
 
 - `imagen_original.png`
 - `ecualizacion_global.png`: ecualización global con `cv2.equalizeHist`, como referencia.
 - `ecualizacion_local_<M>x<N>.png`: una imagen por cada ventana.
+- `histograma_original.png`: imagen original y su histograma.
+- `histograma_global.png`: ecualización global y su histograma.
+- `borde_replicado.png`: imagen original y la misma imagen con el borde que agrega `cv2.copyMakeBorder` para la ventana más grande.
 - `comparacion_ventanas.png`: figura con la imagen original, la ecualización global y todas las ecualizaciones locales, generada con Matplotlib.
+- `histograma_local_31x31.png`: ecualización local con la ventana de 31×31 y su histograma.
 
 Para probar otros tamaños de ventana, se modifica la lista `VENTANAS` al comienzo del script.
 
@@ -82,7 +87,7 @@ Procesa en ciclo las planillas `datos/grade_sheet_1.png` a `datos/grade_sheet_4.
 
 ### Problema 1: ecualización local de histograma
 
-La función `ecualizacion_local(imagen, ventana)` recibe una imagen en escala de grises (`uint8`) y una tupla `(M, N)`. Para cada píxel toma la ventana de M×N centrada en él, la ecualiza con `cv2.equalizeHist` y conserva el nuevo valor del píxel central. La transformación que aplica `cv2.equalizeHist` sobre la ventana es:
+La función `ecualizacion_local(img, ventana)` recibe una imagen en escala de grises (`uint8`) y una tupla `(M, N)`. Para cada píxel toma la ventana de M×N centrada en él, la ecualiza con `cv2.equalizeHist` y conserva el nuevo valor del píxel central. La transformación que aplica `cv2.equalizeHist` sobre la ventana es:
 
 ```text
 s = round( 255 · (CDF(r) − CDF_min) / (M·N − CDF_min) )
@@ -93,7 +98,7 @@ donde `r` es el nivel del píxel central y `CDF_min` es el primer valor no nulo 
 - **Bordes:** se replican los píxeles extremos con `cv2.copyMakeBorder` y `cv2.BORDER_REPLICATE`.
 - **Ventanas pares:** se admiten; el centro es el elemento de índice `(M // 2, N // 2)`.
 
-El análisis de los detalles ocultos y de la influencia del tamaño de la ventana está en el [informe](docs/informe.md).
+El análisis de los detalles ocultos y de la influencia del tamaño de la ventana está en el [informe](docs/informe.pdf).
 
 ### Problema 2: validación de planillas
 
@@ -116,4 +121,5 @@ El análisis de los detalles ocultos y de la influencia del tamaño de la ventan
 ## Documentación
 
 - [`docs/consigna_TP1_2026_C2.pdf`](docs/consigna_TP1_2026_C2.pdf): enunciado del trabajo práctico.
-- [`docs/informe.md`](docs/informe.md): informe con el análisis de los resultados.
+- [`docs/informe.pdf`](docs/informe.pdf): informe con el análisis de los resultados.
+- [`docs/informe.md`](docs/informe.md): fuente editable del informe, a partir de la cual se genera el PDF.

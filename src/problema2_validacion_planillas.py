@@ -9,9 +9,9 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-RAIZ = Path(__file__).resolve().parents[1]
-CARPETA_DATOS = RAIZ / "datos"
-CARPETA_SALIDA = RAIZ / "resultados" / "problema2"
+# Rutas relativas a la raíz del repositorio, desde donde se ejecuta el script.
+CARPETA_DATOS = Path("datos")
+CARPETA_SALIDA = Path("resultados") / "problema2"
 
 CAMPOS =("Legajo", "Nombre y Apellido", "Parcial 1", "Parcial 2", "Parcial 3", "Condición Final")
 

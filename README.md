@@ -35,7 +35,7 @@ El trabajo resuelve los dos problemas planteados en la [consigna](docs/consigna_
 ## Requisitos
 
 - Python 3.14
-- NumPy, OpenCV Contrib y Matplotlib, con las versiones fijadas en [`requirements.txt`](requirements.txt).
+- NumPy, OpenCV Contrib, Matplotlib y pandas, con las versiones fijadas en [`requirements.txt`](requirements.txt).
 
 ### Instalación
 
@@ -102,21 +102,21 @@ El análisis de los detalles ocultos y de la influencia del tamaño de la ventan
 
 ### Problema 2: validación de planillas
 
-1. **Detección de la grilla.** Se umbraliza la imagen (`img < 160`) y se suman los píxeles oscuros por fila y por columna. Los tramos que superan el 55 % del ancho (o del alto) se toman como líneas de la tabla, y de cada tramo se usa su centro. Así la detección no depende de la escala ni de la posición de la tabla.
+1. **Detección de la grilla.** Se umbraliza la imagen (`img < th`, con `th` elegido por el método de Otsu en cada planilla) y se suman los píxeles oscuros por fila y por columna. Los tramos que superan el 55 % del ancho (o del alto) se toman como líneas de la tabla, y de cada tramo se usa su centro. Así la detección no depende de la escala ni de la posición de la tabla.
 2. **Recorte de celdas.** Cada campo se recorta entre las líneas detectadas, con un margen de 2 px para excluir restos de las líneas.
-3. **Caracteres y palabras.** En cada celda se obtienen las componentes conectadas (conectividad 8) y se descartan las de área menor a 3 px. Una separación horizontal mayor a 5 px entre componentes consecutivas se cuenta como espacio entre palabras.
+3. **Caracteres y palabras.** En cada celda se obtienen las componentes conectadas (conectividad 8) y se descartan las de 1 px. Las componentes que se superponen en horizontal se cuentan como un solo carácter, como la Ñ y su tilde. Una separación horizontal mayor a 5 px entre caracteres consecutivos se cuenta como espacio entre palabras.
 4. **Validación.** Cada campo se evalúa con estos criterios; una celda vacía no cumple ninguno y se marca `MAL`.
 
    | Campo | Restricción de la consigna | Criterio implementado |
    |---|---|---|
    | Legajo | 8 caracteres, una única palabra | 8 caracteres y ningún espacio |
-   | Nombre y Apellido | Al menos dos palabras y no más de 12 caracteres | Al menos un espacio, y letras más espacios ≤ 12 (los espacios cuentan como caracteres) |
+   | Nombre y Apellido | Al menos dos palabras y no más de 12 caracteres | Al menos un espacio y no más de 12 caracteres (los espacios no cuentan, porque no están entre los caracteres permitidos) |
    | Parcial 1, 2 y 3 | 1 o 2 caracteres consecutivos | 1 o 2 caracteres y ningún espacio |
    | Condición Final | Un único carácter | Exactamente 1 carácter |
 
 5. **Salidas.**
    - **CSV:** columnas `ID`, `Legajo`, `Nombre y Apellido`, `Parcial 1`, `Parcial 2`, `Parcial 3` y `Condición Final`. El `ID` corresponde al orden del registro en la planilla y cada celda vale `OK` o `MAL`. Codificación UTF-8.
-   - **Imagen de no aprobados:** incluye los registros con todos los campos `OK` y condición final `L` o `R`. Muestra el recorte del campo Nombre y Apellido junto a la etiqueta `LIBRE (L)` o `RECUPERA (R)`; la letra de la condición se identifica por la forma del carácter. Si ningún registro cumple, la imagen lo indica con un mensaje.
+   - **Imagen de no aprobados:** incluye los registros con todos los campos `OK` y condición final `L` o `R`. Muestra el recorte del campo Nombre y Apellido junto a la etiqueta `LIBRE (L)` o `RECUPERA (R)`; la letra de la condición se identifica por su forma: L y R tienen un trazo vertical a la izquierda de toda su altura y A no, y entre L y R solo la R tiene tinta en su mitad superior derecha. Si ningún registro cumple, la imagen lo indica con un mensaje.
 
 ## Documentación
 

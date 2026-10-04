@@ -163,6 +163,8 @@ La consigna pide:
 
 La solución está en `src/problema2_validacion_planillas.py`. El script primero muestra el detalle de cada paso con la planilla `grade_sheet_1.png` (la Figura 9 usa una celda de `grade_sheet_4.png`), y después procesa las cuatro planillas en un ciclo.
 
+El script se organiza en una función por paso: `detectar_grilla` encuentra las líneas de la tabla, `recortar_celda` recorta cada campo, `componentes` y `analizar_campo` cuentan sus caracteres y espacios, `validar` aplica la restricción de la consigna, y `medir_letra` y `leer_condicion` leen la letra de la Condición Final. `validar_planilla` aplica esos pasos a una planilla y muestra el resultado (ítem a), `guardar_no_aprobados` genera la imagen del ítem b y `guardar_csv`, el CSV del ítem c.
+
 ### Binarización
 
 Para separar la tinta del fondo, la imagen se binariza con `img_th = img < th`: los píxeles más oscuros que el umbral `th` se consideran tinta. El umbral se elige automáticamente en cada planilla con el método de Otsu (`cv2.threshold` con `cv2.THRESH_OTSU`). El script lo muestra por pantalla al comienzo de cada planilla:
@@ -188,13 +190,15 @@ Para encontrar las celdas se detectan las líneas de la tabla, como sugiere la c
 
 Las filas y columnas que forman parte de una línea se marcan con un umbral para cada dirección, como propone la consigna: `img_rows_th = img_rows > th_row` e `img_cols_th = img_cols > th_col`, donde `th_row` es la mitad del ancho de la imagen y `th_col`, la mitad del alto. En la Figura 7, esos umbrales son la línea roja discontinua: los picos de las líneas los superan, y las filas y columnas con texto quedan muy por debajo.
 
-Como advierte la consigna, una línea puede tener más de un píxel de grosor, y entonces ocupa varias posiciones seguidas en `img_rows_th`. Por eso se busca el inicio y el fin de cada línea con el método del ejemplo de los renglones de la Unidad 1: `np.diff(img_rows_th)` vale True donde `img_rows_th` cambia de valor, y `np.argwhere` devuelve esas posiciones, que alternan entre el píxel anterior al inicio de una línea y su fin. Sumando 1 a las posiciones pares y agrupándolas de a dos con `np.reshape`, cada línea queda como un par (inicio, fin). Después, el script verifica que haya 22 líneas horizontales y 8 verticales. En la primera planilla encuentra:
+Como advierte la consigna, una línea puede tener más de un píxel de grosor, y entonces ocupa varias posiciones seguidas en `img_rows_th`. Por eso se busca el inicio y el fin de cada línea con el método del ejemplo de los renglones de la Unidad 1: `np.diff(img_rows_th)` vale True donde `img_rows_th` cambia de valor, y `np.argwhere` devuelve esas posiciones, que alternan entre el píxel anterior al inicio de una línea y su fin. Sumando 1 a las posiciones pares y agrupándolas de a dos con `np.reshape`, cada línea queda como un par (inicio, fin). Por ejemplo, para `[False, False, True, True, True, False, False]` los cambios están en las posiciones 1 y 4, y el resultado es `[[2, 4]]`: un tramo que empieza en la posición 2 y termina en la 4. Esto lo hace la función `inicio_fin`. Después, el script verifica que haya 22 líneas horizontales y 8 verticales. En la primera planilla encuentra:
 
 ```text
 Líneas detectadas: 22 horizontales y 8 verticales
+Primeras líneas horizontales [inicio, fin]: [[210, 210], [286, 286], [312, 312]]
+Primeras líneas verticales [inicio, fin]: [[63, 63], [189, 189], [315, 315]]
 ```
 
-Son las 22 líneas horizontales que delimitan el encabezado y los 20 registros, y las 8 verticales que delimitan las 7 columnas. Así, una línea de cualquier grosor se cuenta una sola vez. Como los umbrales son una fracción del tamaño de la imagen, la detección tampoco depende de la escala ni de la posición de la tabla: la cuarta planilla, que tiene otro tamaño, se procesa igual.
+Son las 22 líneas horizontales que delimitan el encabezado y los 20 registros, y las 8 verticales que delimitan las 7 columnas. En estas planillas las líneas miden 1 píxel, así que en cada par el inicio y el fin coinciden; una línea más gruesa daría un par distinto, pero se contaría igual una sola vez. Como los umbrales son una fracción del tamaño de la imagen, la detección tampoco depende de la escala ni de la posición de la tabla: la cuarta planilla, que tiene otro tamaño, se procesa igual.
 
 ![Cantidad de píxeles oscuros por fila y por columna de grade_sheet_1.png. La línea roja discontinua marca la mitad del ancho y del alto.](../resultados/problema2/proyecciones.png)
 
@@ -204,11 +208,31 @@ La Figura 8 muestra las líneas detectadas sobre la planilla: en rojo las horizo
 
 ### Caracteres y palabras de cada campo
 
-Cada campo se recorta entre las líneas detectadas: desde el píxel siguiente al fin de una línea hasta el anterior al inicio de la siguiente. Así el recorte no incluye ningún píxel de las líneas, cualquiera sea su grosor. En cada recorte se buscan las componentes conectadas con `cv2.connectedComponentsWithStats` (conectividad 8), y se aplican tres reglas:
+Cada campo se recorta entre las líneas detectadas con la función `recortar_celda`: desde el píxel siguiente al fin de una línea hasta el anterior al inicio de la siguiente. Por ejemplo, el Legajo del registro 1 está entre las líneas horizontales 286 y 312 y las verticales 189 y 315 (la segunda y la tercera de cada salida de la sección 2.3), así que se recortan las filas 287 a 311 y las columnas 190 a 314: una celda de 25 × 125 píxeles. Así el recorte no incluye ningún píxel de las líneas, cualquiera sea su grosor. En cada recorte se buscan las componentes conectadas con `cv2.connectedComponentsWithStats` (conectividad 8), y se aplican tres reglas:
 
 1. **Se descartan las componentes de 1 píxel**, con el filtro por área que sugiere la consigna: `ix_area = stats[:, -1] > th_area` y `stats = stats[ix_area, :]`, con `th_area = 1`. Así se eliminan restos de las líneas o píxeles sueltos. Se usa el valor más bajo posible para no perder marcas pequeñas: el punto de «1.0», en el Parcial 2 del registro 15 de `grade_sheet_3.png`, mide 2 píxeles y cuenta como carácter, y por eso ese campo queda MAL. En estas cuatro planillas, con el umbral de Otsu y el recorte entre líneas, no aparece ninguna componente de 1 píxel, así que el filtro no descarta ninguna; se mantiene como protección.
 2. **Las componentes que se superponen en horizontal forman un solo carácter.** La Ñ está entre los caracteres permitidos y su tilde es una componente separada de la letra; sin esta regla contaría como dos caracteres.
 3. **Una separación mayor a 0,6 veces la altura del carácter más alto de la celda es un espacio**, es decir, un cambio de palabra. En las cuatro planillas, entre las letras de una palabra la separación es como mucho 0,36 veces esa altura (4 píxeles con letras de 11), y entre palabras es al menos 0,86 veces. El límite se expresa en proporción a la altura, y no en píxeles, para que no dependa de la escala de la planilla.
+
+Como ejemplo, el script muestra las componentes de la celda Legajo del registro 1, que vale «C-1557/1». Cada fila es una componente, con su posición (x, y), su ancho, su alto y su área en píxeles; la última columna no la muestra el script, sino que indica a qué carácter corresponde:
+
+| x | y | Ancho | Alto | Área | Carácter |
+|:--|:--|:--|:--|:--|:--|
+| 84 | 7 | 7 | 12 | 19 | / |
+| 23 | 8 | 9 | 11 | 33 | C |
+| 44 | 8 | 8 | 11 | 31 | 1 |
+| 54 | 8 | 8 | 11 | 39 | 5 |
+| 64 | 8 | 8 | 11 | 39 | 5 |
+| 74 | 8 | 7 | 11 | 23 | 7 |
+| 94 | 8 | 8 | 11 | 31 | 1 |
+| 35 | 14 | 5 | 1 | 5 | - |
+
+Las componentes no salen de izquierda a derecha: OpenCV las numera en el orden en que las encuentra al recorrer la celda de arriba hacia abajo, y por eso la «/», que empieza más arriba, es la primera, y el «-», la última. Por eso `analizar_campo` las ordena por su posición horizontal antes de contar. Ninguna se superpone con otra, y la separación más grande entre dos seguidas es de 4 píxeles, menor que el límite de 0,6 × 12 = 7,2 píxeles (12 es el alto de la «/»): el legajo tiene 8 caracteres y ningún espacio. En el nombre del mismo registro, «JUAN CARLINI», hay una separación mayor al límite. El script lo muestra así:
+
+```text
+Legajo del registro 1: caracteres = 8, espacios = 0
+Nombre y Apellido del registro 1: caracteres = 11, espacios = 1
+```
 
 La parte más sensible es la binarización. La Figura 9 muestra el Parcial 1 del registro 2 de `grade_sheet_4.png`, que vale «100» y, por lo tanto, es incorrecto. Con un umbral fijo de 160, que fue el primero que se probó, entran los grises del borde de los dígitos y los dos ceros quedan unidos en una sola componente: el campo cuenta 2 caracteres y queda OK. Con el umbral de Otsu, que en esta planilla vale 143, cada dígito es una componente y el campo queda MAL.
 
@@ -227,6 +251,20 @@ Con la cantidad de caracteres y de espacios de cada campo, se aplican estos crit
 
 Los espacios no se cuentan entre los 12 caracteres del nombre, porque no están entre los caracteres permitidos que enumera la consigna. Por ejemplo, «AMANDA SANTOS» tiene 12 letras y es correcto. Una celda vacía no tiene caracteres, así que no cumple ningún criterio y queda MAL.
 
+Para ver cómo se pasa de los conteos a OK o MAL, el script muestra un registro con campos correctos e incorrectos, el 19 de `grade_sheet_2.png`:
+
+```text
+Registro 19 de grade_sheet_2:
+Legajo: caracteres = 9, espacios = 1 -> MAL
+Nombre y Apellido: caracteres = 12, espacios = 1 -> OK
+Parcial 1: caracteres = 1, espacios = 0 -> OK
+Parcial 2: caracteres = 1, espacios = 0 -> OK
+Parcial 3: caracteres = 3, espacios = 0 -> MAL
+Condición Final: caracteres = 1, espacios = 0 -> OK
+```
+
+El legajo, «S-94722/ 1», tiene 9 caracteres y un espacio, y el Parcial 3, «100», tiene 3 caracteres: los dos quedan MAL. El nombre, «MIGUEL SASTRE», tiene 12 caracteres y un espacio, así que cumple.
+
 Por cada registro, el script muestra el resultado de cada campo con el formato de la consigna:
 
 ```text
@@ -241,20 +279,28 @@ Condición Final: OK
 
 ### Alumnos no aprobados (ítem b)
 
-Para los registros con todos los campos correctos, se lee la letra de la Condición Final a partir de su forma, como muestra la Figura 10:
+Para los registros con todos los campos correctos, la función `leer_condicion` lee la letra de la Condición Final a partir de su forma, como muestra la Figura 10:
 
 - La **L** y la **R** tienen un trazo vertical a la izquierda de toda su altura: la primera columna de la letra tiene tinta en todas sus filas. En la **A**, la primera columna tiene tinta en menos de la mitad de las filas.
 - Entre la L y la R, solo la **R** tiene tinta en su mitad superior derecha.
 
+La función `medir_letra` calcula esas dos medidas: `tinta_columna_izquierda`, la fracción de las filas de la letra con tinta en su primera columna, y `tinta_arriba_derecha`, si hay tinta en la mitad derecha de su mitad de arriba. El script las muestra para las letras de la Figura 10:
+
+```text
+Registro 1: tinta_columna_izquierda = 0.08, tinta_arriba_derecha = True -> A
+Registro 2: tinta_columna_izquierda = 1.00, tinta_arriba_derecha = False -> L
+Registro 4: tinta_columna_izquierda = 1.00, tinta_arriba_derecha = True -> R
+```
+
 <img src="../resultados/problema2/condicion.png" alt="Letras de la Condición Final de los registros 1, 2 y 4 de grade_sheet_1.png y cómo las lee el script." width="50%">
 
-Con los alumnos con condición L o R se arma una imagen por planilla, con el *crop* del campo Nombre y Apellido de cada uno, en dos columnas: a la izquierda los libres y a la derecha los que recuperan. El título de cada columna funciona como indicador e incluye la cantidad de alumnos, así que una columna vacía muestra «0 alumnos». La Figura 11 muestra la imagen de la primera planilla.
+Con los alumnos con condición L o R, la función `guardar_no_aprobados` arma una imagen por planilla, con el *crop* del campo Nombre y Apellido de cada uno, en dos columnas: a la izquierda los libres y a la derecha los que recuperan. El título de cada columna funciona como indicador e incluye la cantidad de alumnos, así que una columna vacía muestra «0 alumnos». La Figura 11 muestra la imagen de la primera planilla.
 
 <img src="../resultados/problema2/no_aprobados_grade_sheet_1.png" alt="Alumnos no aprobados de grade_sheet_1.png." width="80%">
 
 ### Archivo CSV (ítem c)
 
-Por cada planilla se guarda `validacion_grade_sheet_<id>.csv`, armado con pandas. Tiene una fila por registro, con el ID en la primera columna (el número de orden del registro en la planilla) y una columna por campo, en el orden de la consigna, con el valor OK o MAL. Por ejemplo, las primeras filas del CSV de la primera planilla son:
+Por cada planilla, la función `guardar_csv` guarda `validacion_grade_sheet_<id>.csv`, armado con pandas. Tiene una fila por registro, con el ID en la primera columna (el número de orden del registro en la planilla) y una columna por campo, en el orden de la consigna, con el valor OK o MAL. Por ejemplo, las primeras filas del CSV de la primera planilla son:
 
 ```text
 ID,Legajo,Nombre y Apellido,Parcial 1,Parcial 2,Parcial 3,Condición Final
@@ -267,7 +313,13 @@ El registro 3 de esa planilla está vacío, y por eso todos sus campos quedan MA
 
 ### Resultados de las cuatro planillas (ítem d)
 
-El algoritmo está en la función `validar_planilla(img)`, que recibe únicamente la imagen de una planilla, muestra por pantalla el resultado de cada campo de cada registro y devuelve esos resultados y los alumnos no aprobados. El script la aplica en ciclo a las cuatro planillas y, con lo que devuelve, genera el CSV y la imagen de no aprobados de cada una. La tabla resume sus resultados:
+El algoritmo está en la función `validar_planilla(img)`, que recibe únicamente la imagen de una planilla, muestra por pantalla el resultado de cada campo de cada registro y devuelve esos resultados y los alumnos no aprobados. El ciclo del final del script la aplica a las cuatro planillas y, con lo que devuelve, `guardar_csv` y `guardar_no_aprobados` generan el CSV y la imagen de no aprobados de cada una. Al final de cada planilla, el script muestra un resumen; para la primera:
+
+```text
+Registros con todos los campos OK: 15, libres: 6, recuperan: 4
+```
+
+La tabla reúne el resumen de las cuatro planillas:
 
 | Planilla | Registros con todos los campos OK | Libres (L) | Recuperan (R) |
 |:----|:--------|:---|:---|

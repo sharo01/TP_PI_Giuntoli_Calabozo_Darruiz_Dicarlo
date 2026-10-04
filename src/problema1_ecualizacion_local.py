@@ -12,6 +12,41 @@ CARPETA_SALIDA = Path("resultados") / "problema1"
 VENTANAS = [(5, 5), (15, 15), (31, 31), (61, 61)]
 
 
+def imshow(
+    img: np.ndarray,
+    new_fig: bool = False,
+    title: str | None = None,
+    color_img: bool = False,
+    blocking: bool = False,
+    colorbar: bool = False,
+    ticks: bool = False,
+) -> None:
+    """Muestra una imagen con matplotlib.
+
+    Es la función imshow de los ejemplos de la Unidad 3, con dos cambios. Por
+    defecto dibuja en la figura actual y sin barra de color, porque las figuras
+    del TP tienen varios paneles y se guardan antes de mostrarse. Y las imágenes
+    de 8 bits se muestran con el rango completo, de 0 a 255, para que matplotlib
+    no reescale el contraste.
+    """
+    if new_fig:
+        plt.figure()
+    if color_img:
+        plt.imshow(img)
+    elif img.dtype == np.uint8:
+        plt.imshow(img, cmap="gray", vmin=0, vmax=255)
+    else:
+        plt.imshow(img, cmap="gray")
+    plt.title(title)
+    if not ticks:
+        plt.xticks([])
+        plt.yticks([])
+    if colorbar:
+        plt.colorbar()
+    if new_fig:
+        plt.show(block=blocking)
+
+
 def ecualizacion_local(img: np.ndarray, ventana: tuple[int, int]) -> np.ndarray:
     """Ecualiza cada píxel con el histograma de la ventana M x N centrada en él.
 
@@ -70,8 +105,7 @@ for nivel, cantidad in zip(niveles, cantidades):
 # tapan al resto.
 plt.figure(figsize=(12, 4))
 plt.subplot(121)
-plt.imshow(img, cmap="gray", vmin=0, vmax=255)
-plt.title("Imagen original")
+imshow(img, title="Imagen original", ticks=True)
 plt.subplot(122)
 plt.hist(img.flatten(), bins=256, range=(0, 256), log=True)
 plt.title("Histograma")
@@ -88,8 +122,7 @@ for nivel in niveles:
 
 plt.figure(figsize=(12, 4))
 plt.subplot(121)
-plt.imshow(img_heq, cmap="gray", vmin=0, vmax=255)
-plt.title("Ecualización global")
+imshow(img_heq, title="Ecualización global", ticks=True)
 plt.subplot(122)
 plt.hist(img_heq.flatten(), bins=256, range=(0, 256), log=True)
 plt.title("Histograma")
@@ -104,14 +137,40 @@ img_ext = cv2.copyMakeBorder(
 )
 print(f"Tamaño con borde para una ventana de {alto}x{ancho}: {img_ext.shape}")
 
+# Como ejemplo, se dibujan sobre la imagen con borde los límites de la original
+# y la ventana de su primer píxel. Se pasa a RGB para dibujar en color; cv2
+# recibe los puntos como (columna, fila).
+img_ext_color = cv2.cvtColor(img_ext, cv2.COLOR_GRAY2RGB)
+# Posición del primer píxel de la original dentro de la imagen con borde.
+fila_0, columna_0 = alto // 2, ancho // 2
+# Límites de la imagen original, en azul.
+cv2.rectangle(
+    img_ext_color,
+    (columna_0, fila_0),
+    (columna_0 + img.shape[1] - 1, fila_0 + img.shape[0] - 1),
+    color=(0, 0, 255),
+    thickness=1,
+)
+# Ventana del primer píxel, en rojo: empieza en la esquina de la imagen con borde.
+cv2.rectangle(
+    img_ext_color, (0, 0), (ancho - 1, alto - 1), color=(255, 0, 0), thickness=1
+)
+# Primer píxel de la original, en el centro de su ventana.
+cv2.circle(
+    img_ext_color, (columna_0, fila_0), radius=2, color=(255, 0, 0), thickness=-1
+)
+
 # Original y con borde lado a lado: los ejes en píxeles muestran el tamaño.
 plt.figure(figsize=(10, 5))
 plt.subplot(121)
-plt.imshow(img, cmap="gray", vmin=0, vmax=255)
-plt.title("Imagen original")
+imshow(img, title="Imagen original", ticks=True)
 plt.subplot(122)
-plt.imshow(img_ext, cmap="gray", vmin=0, vmax=255)
-plt.title(f"Con borde replicado (ventana de {alto}x{ancho})")
+imshow(
+    img_ext_color,
+    title=f"Con borde replicado (ventana de {alto}x{ancho})",
+    color_img=True,
+    ticks=True,
+)
 plt.savefig(CARPETA_SALIDA / "borde_replicado.png", dpi=180, bbox_inches="tight")
 plt.show()
 
@@ -139,10 +198,7 @@ plt.figure(figsize=(12, 4 * filas))
 # arriba hacia abajo.
 for i, (titulo, img_panel) in enumerate(paneles, start=1):
     plt.subplot(filas, columnas, i)
-    # vmin/vmax fijos para que matplotlib no reescale el contraste.
-    plt.imshow(img_panel, cmap="gray", vmin=0, vmax=255)
-    plt.title(titulo)
-    plt.axis("off")
+    imshow(img_panel, title=titulo)
 
 plt.tight_layout()
 plt.savefig(CARPETA_SALIDA / "comparacion_ventanas.png", dpi=180, bbox_inches="tight")
@@ -153,8 +209,7 @@ plt.show()
 img_31 = imgs_locales[(31, 31)]
 plt.figure(figsize=(12, 4))
 plt.subplot(121)
-plt.imshow(img_31, cmap="gray", vmin=0, vmax=255)
-plt.title("Ecualización local 31x31")
+imshow(img_31, title="Ecualización local 31x31", ticks=True)
 plt.subplot(122)
 plt.hist(img_31.flatten(), bins=256, range=(0, 256), log=True)
 plt.title("Histograma")

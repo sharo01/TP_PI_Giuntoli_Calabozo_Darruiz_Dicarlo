@@ -97,9 +97,9 @@ donde $g$ es el nivel del píxel central y $\mathrm{CDF}_{\min}$ es el primer va
 Tamaño con borde para una ventana de 61x61: (316, 316)
 ```
 
-La Figura 3 compara la imagen original con la imagen con borde: se agregan 30 píxeles por lado.
+La Figura 3 compara la imagen original con la imagen con borde: se agregan 30 píxeles por lado. Sobre la imagen con borde se marcan con `cv2.rectangle`, en azul, los límites de la imagen original y, en rojo, la ventana de 61×61 de su primer píxel. Ese píxel, marcado con un punto, queda en el centro de la ventana, y solo el cuarto inferior derecho de la ventana cae dentro de la imagen original: el resto son píxeles del borde replicado.
 
-![Imagen original y la misma imagen con el borde replicado para una ventana de 61×61.](../resultados/problema1/borde_replicado.png)
+![Imagen original y la misma imagen con el borde replicado para una ventana de 61×61. En azul, los límites de la imagen original; en rojo, la ventana del primer píxel, marcado con un punto en su centro.](../resultados/problema1/borde_replicado.png)
 
 ### Detalles ocultos (ítem b)
 
@@ -239,11 +239,11 @@ Para los registros con todos los campos correctos, se lee la letra de la Condici
 - La **L** y la **R** tienen un trazo vertical a la izquierda de toda su altura: la primera columna de la letra tiene tinta en todas sus filas. En la **A**, la primera columna tiene tinta en menos de la mitad de las filas.
 - Entre la L y la R, solo la **R** tiene tinta en su mitad superior derecha.
 
-![Letras de la Condición Final de los registros 1, 2 y 4 de grade_sheet_1.png y cómo las lee el script.](../resultados/problema2/condicion.png){width=50%}
+<img src="../resultados/problema2/condicion.png" alt="Letras de la Condición Final de los registros 1, 2 y 4 de grade_sheet_1.png y cómo las lee el script." width="50%">
 
 Con los alumnos con condición L o R se arma una imagen por planilla, con el *crop* del campo Nombre y Apellido de cada uno, en dos columnas: a la izquierda los libres y a la derecha los que recuperan. El título de cada columna funciona como indicador e incluye la cantidad de alumnos, así que una columna vacía muestra «0 alumnos». La Figura 11 muestra la imagen de la primera planilla.
 
-![Alumnos no aprobados de grade_sheet_1.png.](../resultados/problema2/no_aprobados_grade_sheet_1.png){width=80%}
+<img src="../resultados/problema2/no_aprobados_grade_sheet_1.png" alt="Alumnos no aprobados de grade_sheet_1.png." width="80%">
 
 ### Archivo CSV (ítem c)
 

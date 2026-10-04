@@ -24,6 +24,41 @@ CAMPOS = [
 PROPORCION_LINEA = 0.5
 
 
+def imshow(
+    img: np.ndarray,
+    new_fig: bool = False,
+    title: str | None = None,
+    color_img: bool = False,
+    blocking: bool = False,
+    colorbar: bool = False,
+    ticks: bool = False,
+) -> None:
+    """Muestra una imagen con matplotlib.
+
+    Es la función imshow de los ejemplos de la Unidad 3, con dos cambios. Por
+    defecto dibuja en la figura actual y sin barra de color, porque las figuras
+    del TP tienen varios paneles y se guardan antes de mostrarse. Y las imágenes
+    de 8 bits se muestran con el rango completo, de 0 a 255, para que matplotlib
+    no reescale el contraste.
+    """
+    if new_fig:
+        plt.figure()
+    if color_img:
+        plt.imshow(img)
+    elif img.dtype == np.uint8:
+        plt.imshow(img, cmap="gray", vmin=0, vmax=255)
+    else:
+        plt.imshow(img, cmap="gray")
+    plt.title(title)
+    if not ticks:
+        plt.xticks([])
+        plt.yticks([])
+    if colorbar:
+        plt.colorbar()
+    if new_fig:
+        plt.show(block=blocking)
+
+
 def detectar_grilla(img_th: np.ndarray) -> tuple[list[int], list[int]]:
     """Devuelve las posiciones de las líneas horizontales y verticales de la tabla."""
     img_rows = np.sum(img_th, 1)  # Píxeles oscuros de cada fila.
@@ -127,11 +162,9 @@ print(f"Umbral de Otsu para grade_sheet_1: {th:.0f}")
 
 plt.figure(figsize=(12, 5))
 plt.subplot(121)
-plt.imshow(img, cmap="gray", vmin=0, vmax=255)
-plt.title("Planilla original")
+imshow(img, title="Planilla original")
 plt.subplot(122)
-plt.imshow(~img_th, cmap="gray")
-plt.title(f"Binarizada (img < {th:.0f})")
+imshow(~img_th, title=f"Binarizada (img < {th:.0f})")
 plt.savefig(CARPETA_SALIDA / "binarizacion.png", dpi=150, bbox_inches="tight")
 plt.show()
 
@@ -163,8 +196,7 @@ for fila in filas:
 for columna in columnas:
     cv2.line(img_grilla, (columna, filas[0]), (columna, filas[-1]), (0, 0, 255), 2)
 plt.figure(figsize=(8, 7))
-plt.imshow(img_grilla)
-plt.title("Grilla detectada")
+imshow(img_grilla, title="Grilla detectada", color_img=True)
 plt.savefig(CARPETA_SALIDA / "grilla.png", dpi=150, bbox_inches="tight")
 plt.show()
 
@@ -180,9 +212,8 @@ for i, umbral in enumerate([160, th], start=1):
     for x, y, ancho, alto, _ in stats[1:]:
         cv2.rectangle(img_celda, (x, y), (x + ancho - 1, y + alto - 1), (255, 0, 0), 1)
     plt.subplot(2, 1, i)
-    plt.imshow(img_celda)
-    plt.title(f"Umbral {umbral:.0f}: {caracteres} caracteres y {espacios} espacio")
-    plt.axis("off")
+    titulo = f"Umbral {umbral:.0f}: {caracteres} caracteres y {espacios} espacio"
+    imshow(img_celda, title=titulo, color_img=True)
 plt.tight_layout()
 plt.savefig(CARPETA_SALIDA / "componentes.png", dpi=150, bbox_inches="tight")
 plt.show()
@@ -193,9 +224,7 @@ plt.figure(figsize=(6, 3))
 for i, registro in enumerate([1, 2, 4], start=1):
     celda_th = recortar_celda(img_th, filas, columnas, registro, "Condición Final")
     plt.subplot(1, 3, i)
-    plt.imshow(~recortar_letra(celda_th), cmap="gray")
-    plt.title(f"Registro {registro}: {leer_condicion(celda_th)}")
-    plt.axis("off")
+    imshow(~recortar_letra(celda_th), title=f"Registro {registro}: {leer_condicion(celda_th)}")
 plt.savefig(CARPETA_SALIDA / "condicion.png", dpi=150, bbox_inches="tight")
 plt.show()
 
@@ -254,11 +283,12 @@ for numero in range(1, 5):
     for columna, (titulo, color, nombres) in enumerate(grupos, start=1):
         for i in range(filas_figura):
             plt.subplot(filas_figura, 2, 2 * i + columna)
+            if i < len(nombres):
+                imshow(nombres[i])
+            # Sin marco: los nombres se leen como una lista, no como imágenes.
             plt.axis("off")
             if i == 0:
                 plt.title(f"{titulo}: {len(nombres)} alumnos", color=color)
-            if i < len(nombres):
-                plt.imshow(nombres[i], cmap="gray", vmin=0, vmax=255)
     plt.suptitle(f"Alumnos no aprobados - {nombre}")
     plt.tight_layout()
     plt.savefig(CARPETA_SALIDA / f"no_aprobados_{nombre}.png", dpi=150, bbox_inches="tight")

@@ -66,7 +66,7 @@ Procesa `datos/Imagen_con_detalles_escondidos.tif` con ventanas de 5×5, 15×15,
 - `ecualizacion_local_<M>x<N>.png`: una imagen por cada ventana.
 - `histograma_original.png`: imagen original y su histograma.
 - `histograma_global.png`: ecualización global y su histograma.
-- `borde_replicado.png`: imagen original y la misma imagen con el borde que agrega `cv2.copyMakeBorder` para la ventana más grande.
+- `borde_replicado.png`: imagen original y la misma imagen con el borde que agrega `cv2.copyMakeBorder` para la ventana más grande. Sobre la imagen con borde se marcan, con `cv2.rectangle`, los límites de la original y la ventana de su primer píxel.
 - `comparacion_ventanas.png`: figura con la imagen original, la ecualización global y todas las ecualizaciones locales, generada con Matplotlib.
 - `histograma_local_31x31.png`: ecualización local con la ventana de 31×31 y su histograma.
 

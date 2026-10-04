@@ -103,7 +103,7 @@ El análisis de los detalles ocultos y de la influencia del tamaño de la ventan
 
 ### Problema 2: validación de planillas
 
-1. **Detección de la grilla.** Se umbraliza la imagen (`img < th`, con `th` elegido por el método de Otsu en cada planilla) y se suman los píxeles oscuros por fila y por columna. Los tramos que superan la mitad del ancho (o del alto) se toman como líneas de la tabla, y de cada tramo se usa su centro. Así la detección no depende de la escala ni de la posición de la tabla.
+1. **Detección de la grilla.** Se umbraliza la imagen (`img < th`, con `th` elegido por el método de Otsu en cada planilla) y se suman los píxeles oscuros por fila y por columna. Las filas y columnas que superan la mitad del ancho (o del alto) se toman como líneas de la tabla; como las líneas miden 1 px, se verifica que haya 22 horizontales y 8 verticales. Así la detección no depende de la escala ni de la posición de la tabla.
 2. **Recorte de celdas.** Cada campo se recorta entre las líneas detectadas, con un margen de 2 px para excluir restos de las líneas.
 3. **Caracteres y palabras.** En cada celda se obtienen las componentes conectadas (conectividad 8) y se descartan las de 1 px. Las componentes que se superponen en horizontal se cuentan como un solo carácter, como la Ñ y su tilde. Una separación horizontal mayor a 7 px entre caracteres consecutivos se cuenta como espacio entre palabras.
 4. **Validación.** Cada campo se evalúa con estos criterios; una celda vacía no cumple ninguno y se marca `MAL`.
@@ -117,7 +117,7 @@ El análisis de los detalles ocultos y de la influencia del tamaño de la ventan
 
 5. **Salidas.**
    - **CSV:** columnas `ID`, `Legajo`, `Nombre y Apellido`, `Parcial 1`, `Parcial 2`, `Parcial 3` y `Condición Final`. El `ID` corresponde al orden del registro en la planilla y cada celda vale `OK` o `MAL`. Codificación UTF-8.
-   - **Imagen de no aprobados:** incluye los registros con todos los campos `OK` y condición final `L` o `R`. Muestra el recorte del campo Nombre y Apellido junto a la etiqueta `LIBRE (L)` o `RECUPERA (R)`; la letra de la condición se identifica por su forma: L y R tienen un trazo vertical a la izquierda de toda su altura y A no, y entre L y R solo la R tiene tinta en su mitad superior derecha. Si ningún registro cumple, la imagen lo indica con un mensaje.
+   - **Imagen de no aprobados:** incluye los registros con todos los campos `OK` y condición final `L` o `R`. Muestra el recorte del campo Nombre y Apellido de cada alumno en dos columnas, `LIBRE (L)` y `RECUPERA (R)`, con la cantidad de alumnos en el título de cada una; la letra de la condición se identifica por su forma: L y R tienen un trazo vertical a la izquierda de toda su altura y A no, y entre L y R solo la R tiene tinta en su mitad superior derecha.
 
 ## Documentación
 

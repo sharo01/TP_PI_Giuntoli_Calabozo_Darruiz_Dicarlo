@@ -181,7 +181,7 @@ La Figura 6 muestra la primera planilla y su versión binarizada, con la tinta e
 
 Para encontrar las celdas se detectan las líneas de la tabla, como sugiere la consigna: se suma la cantidad de píxeles oscuros de cada fila (`img_rows = np.sum(img_th, 1)`) y de cada columna (`img_cols = np.sum(img_th, 0)`). Las líneas de la tabla cruzan casi toda la imagen, así que en esas sumas aparecen como picos mucho más altos que los de las filas o columnas con texto.
 
-Una fila o columna se toma como línea si más de la mitad de sus píxeles son oscuros. En la Figura 7, ese límite es la línea roja discontinua: los picos de las líneas lo superan, y las filas y columnas con texto quedan muy por debajo. Como cada línea puede ocupar varias posiciones consecutivas, de cada tramo que supera el límite se usa su centro. El script muestra cuántas líneas encontró en la primera planilla:
+Una fila o columna se toma como línea si más de la mitad de sus píxeles son oscuros. En la Figura 7, ese límite es la línea roja discontinua: los picos de las líneas lo superan, y las filas y columnas con texto quedan muy por debajo. En estas planillas cada línea mide un píxel de ancho, así que cada fila o columna que supera el límite es una línea. Si alguna línea fuera más gruesa, se contaría más de una vez; para detectarlo, el script verifica que haya 22 líneas horizontales y 8 verticales. En la primera planilla encuentra:
 
 ```text
 Líneas detectadas: 22 horizontales y 8 verticales
@@ -241,9 +241,9 @@ Para los registros con todos los campos correctos, se lee la letra de la Condici
 
 ![Letras de la Condición Final de los registros 1, 2 y 4 de grade_sheet_1.png y cómo las lee el script.](../resultados/problema2/condicion.png){width=50%}
 
-Con los alumnos con condición L o R se arma una imagen por planilla, con el *crop* del campo Nombre y Apellido de cada uno. El indicador es el título de cada *crop*: «LIBRE (L)» en rojo o «RECUPERA (R)» en naranja. La Figura 11 muestra la imagen de la primera planilla. Si en una planilla no hay alumnos que informar, la imagen lo indica con un mensaje.
+Con los alumnos con condición L o R se arma una imagen por planilla, con el *crop* del campo Nombre y Apellido de cada uno, en dos columnas: a la izquierda los libres y a la derecha los que recuperan. El título de cada columna funciona como indicador e incluye la cantidad de alumnos, así que una columna vacía muestra «0 alumnos». La Figura 11 muestra la imagen de la primera planilla.
 
-![Alumnos no aprobados de grade_sheet_1.png.](../resultados/problema2/no_aprobados_grade_sheet_1.png){width=45%}
+![Alumnos no aprobados de grade_sheet_1.png.](../resultados/problema2/no_aprobados_grade_sheet_1.png){width=80%}
 
 ### Archivo CSV (ítem c)
 
@@ -269,12 +269,13 @@ El script procesa en ciclo las cuatro planillas. La tabla resume sus resultados,
 | `grade_sheet_3.png` | 0 | 0 | 0 |
 | `grade_sheet_4.png` | 6 | 2 | 2 |
 
-En la tercera planilla ningún registro está completo correctamente, así que su imagen de no aprobados solo muestra el mensaje correspondiente.
+En la tercera planilla ningún registro está completo correctamente, así que su imagen de no aprobados muestra 0 alumnos en las dos columnas.
 
 ### Problemas encontrados
 
 - **Caracteres unidos.** Con un umbral fijo de 160, los grises del borde de las letras unían caracteres vecinos (Figura 9), y algunos campos incorrectos quedaban como correctos. Se resolvió eligiendo el umbral con el método de Otsu en cada planilla.
 - **Marcas pequeñas.** El punto de «1.0» es mucho más chico que una letra, y un filtro de área alto lo eliminaría: el campo se contaría como «10» y quedaría correcto. Por eso solo se descartan las componentes de 1 píxel, y ese campo queda MAL en el CSV de la tercera planilla.
+- **La letra Ñ.** La consigna permite la Ñ, pero su tilde no toca a la letra, así que las componentes conectadas la separan en dos y el campo contaría un carácter de más. Por eso las componentes que se superponen en horizontal se cuentan como un solo carácter (sección 2.4). Ninguna de las cuatro planillas tiene una Ñ, así que esta regla no se pudo comprobar con los datos provistos.
 - **Distinción entre A y R.** Las dos letras tienen un hueco cerrado en su parte superior (Figura 10), así que no alcanza con mirar si la letra tiene huecos. La diferencia está en el trazo vertical izquierdo, que la R tiene y la A no.
 
 ### Conclusiones

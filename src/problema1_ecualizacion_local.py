@@ -87,6 +87,22 @@ def ecualizacion_local(img: np.ndarray, ventana: tuple[int, int]) -> np.ndarray:
     return img_eq
 
 
+def imagen_e_histograma(img: np.ndarray, titulo: str, archivo: str) -> None:
+    """Muestra una imagen junto a su histograma y guarda la figura.
+
+    El histograma va en escala logarítmica: con escala lineal, los niveles 0 y
+    227 de la imagen original tapan al resto.
+    """
+    plt.figure(figsize=(12, 4))
+    plt.subplot(121)
+    imshow(img, title=titulo, ticks=True)
+    plt.subplot(122)
+    plt.hist(img.flatten(), bins=256, range=(0, 256), log=True)
+    plt.title("Histograma")
+    plt.savefig(CARPETA_SALIDA / archivo, dpi=180, bbox_inches="tight")
+    plt.show()
+
+
 # --- Imagen original -----------------------------------------------------------
 img = cv2.imread(str(IMAGEN), cv2.IMREAD_GRAYSCALE)
 if img is None:
@@ -101,16 +117,7 @@ niveles, cantidades = np.unique(img, return_counts=True)
 for nivel, cantidad in zip(niveles, cantidades):
     print(f"Nivel {nivel}: {cantidad} píxeles")
 
-# Histograma en escala logarítmica: con escala lineal, los niveles 0 y 227
-# tapan al resto.
-plt.figure(figsize=(12, 4))
-plt.subplot(121)
-imshow(img, title="Imagen original", ticks=True)
-plt.subplot(122)
-plt.hist(img.flatten(), bins=256, range=(0, 256), log=True)
-plt.title("Histograma")
-plt.savefig(CARPETA_SALIDA / "histograma_original.png", dpi=180, bbox_inches="tight")
-plt.show()
+imagen_e_histograma(img, "Imagen original", "histograma_original.png")
 
 # --- Ecualización global -------------------------------------------------------
 img_heq = cv2.equalizeHist(img)
@@ -120,14 +127,7 @@ cv2.imwrite(str(CARPETA_SALIDA / "ecualizacion_global.png"), img_heq)
 for nivel in niveles:
     print(f"Nivel {nivel} -> {img_heq[img == nivel][0]}")
 
-plt.figure(figsize=(12, 4))
-plt.subplot(121)
-imshow(img_heq, title="Ecualización global", ticks=True)
-plt.subplot(122)
-plt.hist(img_heq.flatten(), bins=256, range=(0, 256), log=True)
-plt.title("Histograma")
-plt.savefig(CARPETA_SALIDA / "histograma_global.png", dpi=180, bbox_inches="tight")
-plt.show()
+imagen_e_histograma(img_heq, "Ecualización global", "histograma_global.png")
 
 # --- Borde replicado -----------------------------------------------------------
 # Imagen con el borde que agrega la ventana más grande.
@@ -207,12 +207,5 @@ plt.show()
 # --- Ventana elegida: 31x31 ----------------------------------------------------
 # Misma figura que la de la ecualización global, para comparar los histogramas.
 img_31 = imgs_locales[(31, 31)]
-plt.figure(figsize=(12, 4))
-plt.subplot(121)
-imshow(img_31, title="Ecualización local 31x31", ticks=True)
-plt.subplot(122)
-plt.hist(img_31.flatten(), bins=256, range=(0, 256), log=True)
-plt.title("Histograma")
-plt.savefig(CARPETA_SALIDA / "histograma_local_31x31.png", dpi=180, bbox_inches="tight")
+imagen_e_histograma(img_31, "Ecualización local 31x31", "histograma_local_31x31.png")
 print(f"Imágenes guardadas en: {CARPETA_SALIDA}")
-plt.show()

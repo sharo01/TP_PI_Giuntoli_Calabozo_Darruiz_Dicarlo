@@ -75,6 +75,22 @@ def detectar_grilla(img_th: np.ndarray) -> tuple[list[int], list[int]]:
     return filas, columnas
 
 
+def cargar_planilla(nombre: str):
+    """Lee una planilla, la binariza y detecta su grilla.
+
+    Devuelve la imagen, el umbral, la imagen binaria (True donde hay tinta) y las
+    posiciones de las líneas horizontales y verticales de la tabla.
+    """
+    img = cv2.imread(str(CARPETA_DATOS / f"{nombre}.png"), cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        raise FileNotFoundError(f"No se pudo leer la imagen: {nombre}.png")
+    # El umbral se elige automáticamente con el método de Otsu.
+    th, _ = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU)
+    img_th = img < th
+    filas, columnas = detectar_grilla(img_th)
+    return img, th, img_th, filas, columnas
+
+
 def recortar_celda(img, filas, columnas, registro: int, campo: str) -> np.ndarray:
     """Devuelve la celda de un registro y un campo, sin las líneas de la tabla."""
     # El registro 1 está entre la segunda y la tercera línea horizontal (la
@@ -151,13 +167,7 @@ def leer_condicion(celda_th: np.ndarray) -> str:
 
 # --- Detalle del procesamiento de grade_sheet_1 --------------------------------
 CARPETA_SALIDA.mkdir(parents=True, exist_ok=True)
-img = cv2.imread(str(CARPETA_DATOS / "grade_sheet_1.png"), cv2.IMREAD_GRAYSCALE)
-if img is None:
-    raise FileNotFoundError("No se pudo leer la imagen: grade_sheet_1.png")
-
-# Binarización: el umbral se elige automáticamente con el método de Otsu.
-th, _ = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU)
-img_th = img < th
+img, th, img_th, filas, columnas = cargar_planilla("grade_sheet_1")
 print(f"Umbral de Otsu para grade_sheet_1: {th:.0f}")
 
 plt.figure(figsize=(12, 5))
@@ -188,7 +198,6 @@ plt.savefig(CARPETA_SALIDA / "proyecciones.png", dpi=150, bbox_inches="tight")
 plt.show()
 
 # Grilla detectada, dibujada sobre la planilla.
-filas, columnas = detectar_grilla(img_th)
 print(f"Líneas detectadas: {len(filas)} horizontales y {len(columnas)} verticales")
 img_grilla = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
 for fila in filas:
@@ -231,16 +240,9 @@ plt.show()
 # --- Procesamiento de las planillas --------------------------------------------
 for numero in range(1, 5):
     nombre = f"grade_sheet_{numero}"
-    img = cv2.imread(str(CARPETA_DATOS / f"{nombre}.png"), cv2.IMREAD_GRAYSCALE)
-    if img is None:
-        raise FileNotFoundError(f"No se pudo leer la imagen: {nombre}.png")
+    img, th, img_th, filas, columnas = cargar_planilla(nombre)
     print(f"=== Planilla {nombre}.png ===")
-
-    # Binarización con el umbral de Otsu y detección de la grilla.
-    th, _ = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU)
-    img_th = img < th
     print(f"Umbral de Otsu: {th:.0f}")
-    filas, columnas = detectar_grilla(img_th)
 
     # --- Validación de cada registro ---
     resultados = []

@@ -80,7 +80,7 @@ Para probar otros tamaños de ventana, se modifica la lista `VENTANAS` al comien
 python src/problema2_validacion_planillas.py
 ```
 
-Primero muestra el detalle de cada paso con `datos/grade_sheet_1.png` y después procesa en ciclo las planillas `datos/grade_sheet_1.png` a `datos/grade_sheet_4.png`. Para cada una muestra por pantalla el umbral de Otsu y el resultado (`OK` o `MAL`) de cada campo de cada registro. Guarda en `resultados/problema2/`:
+Primero muestra el detalle de cada paso con `datos/grade_sheet_1.png` (y el caso del «100» con `datos/grade_sheet_4.png`) y después procesa en ciclo las planillas `datos/grade_sheet_1.png` a `datos/grade_sheet_4.png`. Para cada una muestra por pantalla el umbral de Otsu y el resultado (`OK` o `MAL`) de cada campo de cada registro. Guarda en `resultados/problema2/`:
 
 - `validacion_grade_sheet_<id>.csv`: resultado de la validación de cada registro.
 - `no_aprobados_grade_sheet_<id>.png`: alumnos no aprobados con registro válido.

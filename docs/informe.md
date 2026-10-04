@@ -128,11 +128,9 @@ La tabla siguiente resume lo que se observa al comparar las ecualizaciones local
 
 **Por qué aparecen degradados con 61×61.** En los ejes de la Figura 1 se ve que cada recuadro mide unos 60 píxeles de lado: la ventana de 61×61 es casi del tamaño de un recuadro. Por eso, en casi cualquier punto de un recuadro, la ventana incluye también parte del fondo claro. Esos píxeles quedan por encima de los detalles en la distribución acumulada, así que el detalle deja de ser el nivel más alto de la ventana y se lleva a un valor más bajo. Cuánto fondo entra depende de la posición: en el centro del recuadro entra menos y el detalle se ve más claro; cerca del borde entra más y se oscurece.
 
-**La ventana de 31×31.** La Figura 5 muestra el resultado con la ventana elegida y su histograma, en el mismo formato que la Figura 2 para poder compararlos. La ecualización global asigna un único nivel de salida a cada nivel original, así que su histograma tiene solo barras aisladas: según la salida de la sección anterior, apenas 10 valores distintos (0, 3, 4, 5, 6, 7, 12, 18, 249 y 255). En la ecualización local, en cambio, la transformación depende de la vecindad de cada píxel: un mismo nivel original puede terminar en valores distintos, y el histograma ocupa prácticamente todo el rango entre 0 y 255. Por eso los detalles, que en la imagen original diferían del negro en pocos niveles, quedan claros sobre sus recuadros.
+**La ventana de 31×31.** La Figura 5 muestra el resultado con la ventana elegida y su histograma, en el mismo formato que la Figura 2 para poder compararlos. La ecualización global asigna un único nivel de salida a cada nivel original, así que su histograma tiene solo barras aisladas: según la salida de la sección 1.3, apenas 10 valores distintos (0, 3, 4, 5, 6, 7, 12, 18, 249 y 255). En la ecualización local, en cambio, la transformación depende de la vecindad de cada píxel: un mismo nivel original puede terminar en valores distintos, y el histograma ocupa prácticamente todo el rango entre 0 y 255. Por eso los detalles, que en la imagen original diferían del negro en pocos niveles, quedan claros sobre sus recuadros.
 
 ![Ecualización local con ventana de 31×31 y su histograma en escala logarítmica.](../resultados/problema1/histograma_local_31x31.png)
-
-<!--raw-typst #place.flush() #pagebreak(weak: true)-->
 
 ### Conclusiones
 
@@ -140,7 +138,7 @@ La ecualización global no revela los detalles porque reparte el rango según la
 
 El tamaño de la ventana tiene que cumplir dos condiciones:
 
-- **Incluir píxeles más oscuros que el detalle**, como los del recuadro que lo rodea. Si la ventana cae entera dentro del detalle, el nivel del detalle es el más bajo de la ventana y la fórmula de la sección 1.4 lo lleva a 0: por eso con 5×5 el disco queda con zonas oscuras (Figura 4). No hace falta que la ventana sea más grande que el detalle: con 15×15 el disco, que es más grande, se ve completo.
+- **Incluir píxeles más oscuros que el detalle**, como los del recuadro que lo rodea. Si la ventana cae entera dentro del detalle, el nivel del detalle es el más bajo de la ventana y la fórmula de la sección 1.4 lo lleva a 0, o lo deja igual, si la ventana tiene un solo nivel: por eso con 5×5 el disco queda con zonas oscuras (Figura 4). No hace falta que la ventana sea más grande que el detalle: con 15×15 el disco, que es más grande, se ve completo.
 - **Ser menor que los recuadros**, para no mezclarlos con el fondo claro.
 
 En esta imagen, con recuadros de unos 60 píxeles de lado, la ventana de 31×31 cumple las dos condiciones: las ventanas más chicas amplifican el ruido del fondo, y la de 5×5 deja además zonas oscuras dentro del disco; la de 61×61 mezcla cada recuadro con el fondo.
@@ -163,7 +161,7 @@ La consigna pide:
 - **c)** Generar un archivo CSV con el resultado de la validación de cada registro.
 - **d)** Aplicar el algoritmo, en ciclo, a las cuatro planillas e informar los resultados.
 
-La solución está en `src/problema2_validacion_planillas.py`. El script primero muestra el detalle de cada paso con la planilla `grade_sheet_1.png`, y después procesa las cuatro planillas en un ciclo.
+La solución está en `src/problema2_validacion_planillas.py`. El script primero muestra el detalle de cada paso con la planilla `grade_sheet_1.png` (la Figura 9 usa una celda de `grade_sheet_4.png`), y después procesa las cuatro planillas en un ciclo.
 
 ### Binarización
 
@@ -300,8 +298,6 @@ Las Figuras 12, 13 y 14 muestran las imágenes de no aprobados de las otras tres
 <img src="../resultados/problema2/no_aprobados_grade_sheet_3.png" alt="Alumnos no aprobados de grade_sheet_3.png." width="55%">
 
 <img src="../resultados/problema2/no_aprobados_grade_sheet_4.png" alt="Alumnos no aprobados de grade_sheet_4.png." width="65%">
-
-<!--raw-typst #place.flush()-->
 
 ### Problemas encontrados
 

@@ -53,6 +53,8 @@ En PowerShell, el entorno se activa con `.venv\Scripts\Activate.ps1`; en Linux o
 
 Los scripts no reciben argumentos: leen de `datos/` y escriben en `resultados/`. Los comandos se ejecutan desde la raíz del repositorio: los scripts usan rutas relativas a esa carpeta, para poder ejecutarlos también línea por línea.
 
+Cada figura se guarda y después se muestra en una ventana de Matplotlib, y el script se detiene hasta que se cierra: el Problema 1 abre 5 ventanas y el Problema 2, 9. Para generar los resultados sin abrir ventanas, se puede ejecutar con `MPLBACKEND=Agg python src/<script>.py` en Git Bash, o con `$env:MPLBACKEND = "Agg"` antes del comando en PowerShell; las figuras se guardan igual, y Matplotlib avisa que no puede mostrarlas.
+
 ### Problema 1
 
 ```bash
@@ -82,7 +84,8 @@ Primero muestra el detalle de cada paso con `datos/grade_sheet_1.png` y después
 
 - `validacion_grade_sheet_<id>.csv`: resultado de la validación de cada registro.
 - `no_aprobados_grade_sheet_<id>.png`: alumnos no aprobados con registro válido.
-- `binarizacion.png`, `proyecciones.png`, `grilla.png`, `componentes.png` y `condicion.png`: detalle de cada paso con la primera planilla.
+- `binarizacion.png`, `proyecciones.png`, `grilla.png` y `condicion.png`: detalle de cada paso con la primera planilla.
+- `componentes.png`: componentes conectadas del «100» de la cuarta planilla, con un umbral fijo de 160 y con el de Otsu.
 
 ## Descripción de la solución
 
@@ -103,9 +106,11 @@ El análisis de los detalles ocultos y de la influencia del tamaño de la ventan
 
 ### Problema 2: validación de planillas
 
-1. **Detección de la grilla.** Se umbraliza la imagen (`img < th`, con `th` elegido por el método de Otsu en cada planilla) y se suman los píxeles oscuros por fila y por columna. Las filas y columnas que superan la mitad del ancho (o del alto) se toman como líneas de la tabla; como las líneas miden 1 px, se verifica que haya 22 horizontales y 8 verticales. Así la detección no depende de la escala ni de la posición de la tabla.
-2. **Recorte de celdas.** Cada campo se recorta entre las líneas detectadas, con un margen de 2 px para excluir restos de las líneas.
-3. **Caracteres y palabras.** En cada celda se obtienen las componentes conectadas (conectividad 8) y se descartan las de 1 px. Las componentes que se superponen en horizontal se cuentan como un solo carácter, como la Ñ y su tilde. Una separación horizontal mayor a 7 px entre caracteres consecutivos se cuenta como espacio entre palabras.
+El algoritmo está en la función `validar_planilla(img)`, que recibe únicamente la imagen de una planilla en escala de grises, muestra por pantalla el resultado de cada campo de cada registro y devuelve esos resultados y los recortes del nombre de los alumnos libres y de los que recuperan. El ciclo final la aplica a las cuatro planillas y genera el CSV y la imagen de no aprobados de cada una.
+
+1. **Detección de la grilla.** Como propone la consigna, se umbraliza la imagen con `img_th = img < th` (con `th` elegido por el método de Otsu en cada planilla), se suman los píxeles oscuros por fila y por columna (`img_rows` e `img_cols`) y se marcan las líneas con `img_rows_th = img_rows > th_row` e `img_cols_th = img_cols > th_col`, donde `th_row` y `th_col` son la mitad del ancho y del alto. El inicio y el fin de cada línea se encuentran con `np.diff` y `np.argwhere`, como en el ejemplo de los renglones de la Unidad 1, así que las líneas pueden tener cualquier grosor; después se verifica que haya 22 horizontales y 8 verticales.
+2. **Recorte de celdas.** Cada campo se recorta desde el píxel siguiente al fin de una línea hasta el anterior al inicio de la siguiente.
+3. **Caracteres y palabras.** En cada celda se obtienen las componentes conectadas (conectividad 8) y se descartan las de 1 px con el filtro por área de la consigna (`ix_area = stats[:, -1] > th_area`). Las componentes que se superponen en horizontal se cuentan como un solo carácter, como la Ñ y su tilde. Una separación horizontal entre caracteres consecutivos mayor a 0,6 veces la altura del carácter más alto de la celda se cuenta como espacio entre palabras.
 4. **Validación.** Cada campo se evalúa con estos criterios; una celda vacía no cumple ninguno y se marca `MAL`.
 
    | Campo | Restricción de la consigna | Criterio implementado |

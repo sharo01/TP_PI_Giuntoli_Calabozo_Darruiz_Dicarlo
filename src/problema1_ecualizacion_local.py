@@ -69,7 +69,6 @@ def ecualizacion_local(img: np.ndarray, ventana: tuple[int, int]) -> np.ndarray:
         ancho_ventana - columna_centro - 1,
         cv2.BORDER_REPLICATE,
     )
-
     img_eq = np.empty_like(img)
     alto, ancho = img.shape
     for fila in range(alto):
@@ -83,7 +82,6 @@ def ecualizacion_local(img: np.ndarray, ventana: tuple[int, int]) -> np.ndarray:
             # Se ecualiza toda la vecindad pero solo se conserva su centro.
             vecindad_eq = cv2.equalizeHist(vecindad)
             img_eq[fila, columna] = vecindad_eq[fila_centro, columna_centro]
-
     return img_eq
 
 
